@@ -32,9 +32,14 @@ COPY src/ /ima-rtmr-extend/src/
 COPY kernel/ /ima-rtmr-extend/kernel/
 COPY ubuntu/common/ /ima-rtmr-extend/ubuntu/common/
 
-# Phase 2: Apply patches, enable config, pin DKMS versions, rename kernel
-# HWE 6.17 is too new for Noble 24.04 DKMS packages (e.g. ZFS 2.2.2
-# supports only up to 6.6), so dkms-versions is truncated after pinning.
+# Phase 2: Apply patches, enable config, pin DKMS versions, rename kernel.
+# Every DKMS package shipped in Noble's linux-hwe-6.17 source is a 2024
+# snapshot that fails against the 6.17 kernel headers (zfs-linux 2.3.4
+# stops at 6.16; ipu6/ipu7/usbio/vision predate the asm/unaligned.h and
+# vmalloc.h reshuffles; backport-iwlwifi 11510 conflicts with current
+# timer.h/stddef.h). Canonical SRUs updated DKMS later via separate
+# uploads, but Noble's archive at build time has none of those, so we
+# truncate dkms-versions to skip the whole DKMS build phase.
 RUN <<EOF
     set -eEuo pipefail
     bash /ima-rtmr-extend/kernel/apply-patch.sh /build/linux-hwe-6.17-* 6.17
