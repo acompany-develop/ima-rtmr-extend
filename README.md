@@ -73,7 +73,10 @@ baseline=$(sudo xxd -p /sys/class/misc/tdx_guest/measurements/rtmr2:sha384 | tr 
 # ...
 
 # RTMR リプレイ検証
-sudo bash validate.sh "$baseline" "$skip"
+sudo ./validate.py "$baseline" "$skip"
+
+# Bash実装 (遅いです)
+sudo ./validate.sh "$baseline" "$skip"
 ```
 
 ## ライセンス
