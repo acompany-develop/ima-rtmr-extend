@@ -51,6 +51,17 @@ kernel/remove-patch.sh /path/to/linux 7.0
 Docker を使ってカーネルモジュールを組み込んだ Ubuntu 向けのカーネルパッケージをビルドできます。
 詳細は [ubuntu/README.md](ubuntu/README.md) を参照してください。
 
+## 開発
+
+Nix [flake](https://nix.dev/concepts/flakes.html) の [devShell](https://nix.dev/manual/nix/latest/command-ref/new-cli/nix3-develop) でビルド・フォーマットツール一式が揃います。
+
+```sh
+nix develop          # gcc, make, kmod, treefmt (clang-format / shfmt) が利用可能
+nix fmt              # ソース全体をフォーマット
+```
+
+`.envrc` を使う場合は `direnv allow` で自動的に devShell に入れます。
+
 ## 検証
 
 ```sh
