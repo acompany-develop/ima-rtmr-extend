@@ -7,6 +7,10 @@
 # direnv
 .direnv/
 
+# Nix
+result
+result-*
+
 # Kernel module build artifacts
 *.o
 *.ko

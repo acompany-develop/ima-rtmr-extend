@@ -3,12 +3,16 @@
 
 { ... }:
 {
-  projectRootFile = "flake.nix";
+    projectRootFile = "flake.nix";
 
-  programs.clang-format.enable = true;
-  programs.shfmt = {
-    enable = true;
-    indent_size = 4;
-  };
-  programs.ruff-format.enable = true;
+    programs.clang-format.enable = true;
+    programs.shfmt = {
+        enable = true;
+        indent_size = 4;
+    };
+    programs.ruff-format.enable = true;
+    programs.nixfmt = {
+        enable = true;
+        indent = 4;
+    };
 }
