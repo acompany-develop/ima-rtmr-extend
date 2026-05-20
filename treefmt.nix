@@ -10,4 +10,5 @@
     enable = true;
     indent_size = 4;
   };
+  programs.ruff-format.enable = true;
 }
