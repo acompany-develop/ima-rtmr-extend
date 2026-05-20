@@ -10,4 +10,4 @@ obj-m := ima_rtmr.o
 ccflags-y += -DDEBUG
 endif
 
-ima_rtmr-y := main.o detect.o extend.o handler.o utils.o
+ima_rtmr-y := main.o detect.o extend.o handler.o seq.o utils.o

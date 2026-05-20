@@ -11,6 +11,8 @@ struct ima_template_entry;
 struct extend_request {
     /* IMA entries are never freed during normal operation */
     struct ima_template_entry* entry;
+    /* Sequence number assigned inside ima_extend_list_mutex (0 = unavailable) */
+    u64 seq;
 };
 
 #endif /* _IMA_RTMR_CONSTS_H */

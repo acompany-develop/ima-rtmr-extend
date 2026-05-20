@@ -27,7 +27,7 @@ cd "${kernel_src}"
 
 # Build on /tmp (BuildKit tmpfs) when there is enough RAM, to skip overlayfs overhead.
 mem_gib=$(awk '/MemTotal/{printf "%d", $2/1048576}' /proc/meminfo)
-if (( mem_gib >= 64 )); then
+if ((mem_gib >= 64)); then
     echo "==> ${mem_gib} GiB RAM detected (>=64 GiB): building on tmpfs"
     tmpfs_src="/tmp/kernel-build"
     cp -a "${kernel_src}" "${tmpfs_src}"
@@ -39,7 +39,7 @@ fi
 
 # Skip fakeroot when running as root: faked-sysv serializes all
 # stat/chown/chmod through a single daemon and tanks high-parallelism builds.
-if (( UID == 0 )); then
+if ((UID == 0)); then
     FAKEROOT=""
 else
     FAKEROOT="fakeroot"

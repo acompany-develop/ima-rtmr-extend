@@ -17,29 +17,29 @@ for dkms_versions in "${kernel_src}"/debian*/dkms-versions; do
     found=1
 
     echo "=== Pinning DKMS versions: ${dkms_versions} ==="
-    apt-get update -qq > /dev/null
+    apt-get update -qq >/dev/null
 
     file_content=$(cat "${dkms_versions}")
 
     while IFS= read -r line; do
-        [[ -z "${line}" || "${line}" == \#* ]] && continue
+        [[ -z ${line} || ${line} == \#* ]] && continue
 
         src_pkg=$(echo "${line}" | awk '{print $1}')
         wanted=$(echo "${line}" | awk '{print $2}')
 
-        available=$(apt-cache showsrc "${src_pkg}" 2>/dev/null \
-            | awk '/^Version:/{print $2; exit}' || true)
+        available=$(apt-cache showsrc "${src_pkg}" 2>/dev/null |
+            awk '/^Version:/{print $2; exit}' || true)
 
-        if [[ -z "${available}" ]]; then
+        if [[ -z ${available} ]]; then
             sed -i "/^${src_pkg} ${wanted}/d" "${dkms_versions}"
             echo "removed: ${src_pkg} (not in repositories)"
-        elif [[ "${available}" != "${wanted}" ]]; then
+        elif [[ ${available} != "${wanted}" ]]; then
             sed -i "s|^${src_pkg} ${wanted}|${src_pkg} ${available}|" "${dkms_versions}"
             echo "pinned: ${src_pkg} ${wanted} -> ${available}"
         fi
-    done <<< "${file_content}"
+    done <<<"${file_content}"
 done
 
-if [[ "${found}" -eq 0 ]]; then
+if [[ ${found} -eq 0 ]]; then
     echo "no dkms-versions file found (skipping)"
 fi

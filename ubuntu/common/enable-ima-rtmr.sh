@@ -13,11 +13,11 @@ found=0
 for annotations in "${kernel_src}"/debian*/config/annotations; do
     [ -f "${annotations}" ] || continue
     found=1
-    echo 'CONFIG_IMA_RTMR                         policy<{"amd64": "y", "arm64": "y", "armhf": "y", "ppc64el": "y", "riscv64": "y", "s390x": "y"}>  note<ima_rtmr>' >> "${annotations}"
+    echo 'CONFIG_IMA_RTMR                         policy<{"amd64": "y", "arm64": "y", "armhf": "y", "ppc64el": "y", "riscv64": "y", "s390x": "y"}>  note<ima_rtmr>' >>"${annotations}"
     echo "annotations: ${annotations}"
 done
 
-if [[ "${found}" -eq 0 ]]; then
+if [[ ${found} -eq 0 ]]; then
     echo "error: no annotations file found in ${kernel_src}/debian*/config/" >&2
     exit 1
 fi

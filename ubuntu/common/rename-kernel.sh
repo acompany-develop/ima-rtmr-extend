@@ -21,13 +21,13 @@ suffix="${2:-"+imrtmr1"}"
 
 changelog=""
 for f in "${kernel_src}"/debian.*/changelog "${kernel_src}"/debian/changelog; do
-    if [[ -f "${f}" ]]; then
+    if [[ -f ${f} ]]; then
         changelog="${f}"
         break
     fi
 done
 
-if [[ -z "${changelog}" ]]; then
+if [[ -z ${changelog} ]]; then
     echo "error: no debian changelog found in ${kernel_src}" >&2
     exit 1
 fi

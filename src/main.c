@@ -18,6 +18,7 @@
 #include "detect.h"
 #include "extend.h"
 #include "handler.h"
+#include "seq.h"
 #include "utils.h"
 
 static char* mr_path = "";
@@ -99,6 +100,17 @@ static int __init ima_rtmr_init(void) {
         goto err_destroy_wq;
     }
 
+    rc = register_kprobe(&ima_rtmr_seq_kprobe);
+    if (rc) {
+        pr_warn("cannot register seq kprobe on ima_add_digest_entry: %d "
+                "(ordering falls back to FIFO)\n",
+                rc);
+        /* non-fatal: module works without sequencing */
+    } else {
+        ima_rtmr_seq_activate();
+        pr_info("sequencing enabled (kprobe on ima_add_digest_entry)\n");
+    }
+
     pr_info("loaded (%s, digest %d bytes)\n", hash_name, alg->digest_size);
     return 0;
 
@@ -110,6 +122,8 @@ err_close:
 }
 
 static void __exit ima_rtmr_exit(void) {
+    if (ima_rtmr_seq_enabled())
+        unregister_kprobe(&ima_rtmr_seq_kprobe);
     unregister_kretprobe(&ima_rtmr_kretprobe);
 
     flush_workqueue(extend_wq);

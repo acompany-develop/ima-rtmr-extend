@@ -14,15 +14,15 @@ patch_dir="${script_dir}/patches/${patch_version}"
 
 integrity_dir="${kernel_src}/security/integrity"
 
-if [[ ! -d "${patch_dir}" ]]; then
+if [[ ! -d ${patch_dir} ]]; then
     echo "error: patch directory not found: ${patch_dir}" >&2
     echo "available versions:" >&2
     ls "${script_dir}/patches/" >&2
     exit 1
 fi
 
-patch -R -d "${kernel_src}" -p1 < "${patch_dir}/makefile.patch"
-patch -R -d "${kernel_src}" -p1 < "${patch_dir}/kconfig.patch"
+patch -R -d "${kernel_src}" -p1 <"${patch_dir}/makefile.patch"
+patch -R -d "${kernel_src}" -p1 <"${patch_dir}/kconfig.patch"
 
 if [[ -L "${integrity_dir}/ima_rtmr" ]]; then
     rm "${integrity_dir}/ima_rtmr"

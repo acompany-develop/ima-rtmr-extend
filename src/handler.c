@@ -14,6 +14,7 @@
 #include "consts.h"
 #include "extend.h"
 #include "ima.h"
+#include "seq.h"
 
 atomic_long_t ima_rtmr_drops;
 
@@ -35,14 +36,29 @@ static int ima_rtmr_ret_handler(struct kretprobe_instance* ri,
     struct ima_rtmr_probe_data* data = (void*)ri->data;
     struct ima_template_entry* entry = data->entry;
     struct extend_request req;
-
-    if (regs_return_value(regs) != 0)
-        return 0;
+    u64 seq;
 
     if (!entry || !entry->template_desc)
         return 0;
 
+    /*
+     * Always consume the seq to avoid leaking map entries, even when
+     * ima_add_template_entry() failed (e.g. duplicate hash).
+     */
+    seq = ima_rtmr_seq_consume(entry);
+
+    if (regs_return_value(regs) != 0) {
+        /*
+         * Notify the reorder buffer that this sequence number will
+         * never produce an extend, so next_expected_seq can advance.
+         */
+        if (seq)
+            ima_rtmr_seq_skip(seq);
+        return 0;
+    }
+
     req.entry = entry;
+    req.seq = seq;
 
     if (!ima_rtmr_fifo_in(&req)) {
         pr_warn_ratelimited("extend FIFO full, measurement dropped\n");
