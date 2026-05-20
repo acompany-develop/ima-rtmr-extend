@@ -1,0 +1,20 @@
+--- a/security/integrity/Kconfig
++++ b/security/integrity/Kconfig
+@@ -130,6 +130,17 @@
+ 	  be enabled by specifying 'integrity_audit=1' on the kernel
+ 	  command line.
+ 
++config IMA_RTMR
++	bool "Extend IMA measurements to CC runtime measurement registers"
++	depends on IMA && KRETPROBES && TSM_MEASUREMENTS
++	help
++	  Extends IMA measurements to Confidential Computing runtime
++	  measurement registers (e.g. TDX RTMR) via the tsm-mr sysfs
++	  interface. The module hooks ima_add_template_entry() using a
++	  kretprobe and writes template digests to the target register.
++
++	  If unsure, say N.
++
+ source "security/integrity/ima/Kconfig"
+ source "security/integrity/evm/Kconfig"
+ 

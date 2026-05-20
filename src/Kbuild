@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (c) 2026 Acompany Co., Ltd.
+
+ifneq ($(CONFIG_IMA_RTMR),)
+# In-kernel build (CONFIG_IMA_RTMR=y via Kconfig)
+obj-$(CONFIG_IMA_RTMR) += ima_rtmr.o
+else
+# Out-of-tree build (make M=...)
+obj-m := ima_rtmr.o
+ccflags-y += -DDEBUG
+endif
+
+ima_rtmr-y := main.o detect.o extend.o handler.o utils.o

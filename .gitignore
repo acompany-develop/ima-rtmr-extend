@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (c) 2026 Acompany Co., Ltd.
+
+# IDE
+.vscode/
+
+# direnv
+.direnv/
+
+# Kernel module build artifacts
+*.o
+*.ko
+*.mod
+*.mod.c
+*.mod.o
+.module-common.o
+modules.order
+Module.symvers
+.tmp_versions/
+.cache.mk
+.*.cmd
+.*.d
+
+# llm
+.claude/settings.local.json

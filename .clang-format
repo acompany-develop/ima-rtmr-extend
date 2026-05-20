@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (c) 2026 Acompany Co., Ltd.
+
+BasedOnStyle: LLVM
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 0
+
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortLoopsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortBlocksOnASingleLine: Empty
+
+PointerAlignment: Left
+
+AlignAfterOpenBracket: Align
+BinPackArguments: false
+BinPackParameters: false
+
+IncludeBlocks: Regroup
+SortIncludes: CaseSensitive
+IncludeCategories:
+  - Regex: '^<linux/'
+    Priority: 1
+  - Regex: '^<asm/'
+    Priority: 2
+  - Regex: '^<crypto/'
+    Priority: 3
+  - Regex: '^<'
+    Priority: 4
+  - Regex: '^"'
+    Priority: 5
+
+InsertTrailingCommas: Wrapped
+
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: false
+SpacesInParentheses: false
+
+AlignConsecutiveMacros: Consecutive
+AlignEscapedNewlines: Left
+AlignTrailingComments: true
+
+IndentCaseLabels: false
+IndentPPDirectives: None

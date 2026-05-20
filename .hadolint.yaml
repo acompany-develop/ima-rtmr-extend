@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (c) 2026 Acompany Co., Ltd.
+
+ignored:
+  - DL3008  # Pin versions in apt-get install
+  - DL3015  # Avoid additional packages with apt-get install
+  - DL3003  # Use WORKDIR to switch to a directory (cd in RUN is intentional for glob expansion)
+  - SC2155  # Declare and assign separately (export inline is idiomatic in Dockerfiles)

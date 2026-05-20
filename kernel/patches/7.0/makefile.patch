@@ -1,0 +1,9 @@
+--- a/security/integrity/Makefile
++++ b/security/integrity/Makefile
+@@ -19,5 +19,6 @@
+                                      platform_certs/load_powerpc.o \
+                                      platform_certs/keyring_handler.o
+ # The relative order of the 'ima' and 'evm' LSMs depends on the order below.
++obj-$(CONFIG_IMA_RTMR)			+= ima_rtmr/
+ obj-$(CONFIG_IMA)			+= ima/
+ obj-$(CONFIG_EVM)			+= evm/
