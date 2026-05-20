@@ -15,13 +15,15 @@ def parse_digest(token: str) -> bytes:
 
 
 def load_log(path: str) -> list[bytes]:
-    with open(path, encoding="ascii") as f:
+    with open(path, encoding="utf-8", errors="surrogateescape") as f:
         return [parse_digest(line.split()[1]) for line in f if line.strip()]
 
 
 def replay_from(
     baseline: bytes, digests: list[bytes], actual: bytes, start: int
 ) -> int | None:
+    if baseline == actual:
+        return start
     r = baseline
     for i in range(start, len(digests)):
         r = hashlib.sha384(r + digests[i]).digest()
