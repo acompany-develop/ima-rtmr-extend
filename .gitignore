@@ -27,3 +27,4 @@ Module.symvers
 
 # llm
 .claude/settings.local.json
+.claude/worktrees/
