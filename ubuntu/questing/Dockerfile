@@ -19,7 +19,8 @@ RUN apt-get update -qq && apt-get install -y -qq \
     libiberty-dev binutils-dev libzstd-dev \
     python3-dev python3-setuptools \
     dwarves zstd lz4 xz-utils gawk dctrl-tools \
-    ccache default-jdk-headless dkms && \
+    ccache default-jdk-headless dkms \
+    sbsigntool && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -46,6 +47,19 @@ EOF
 RUN --mount=type=cache,target=/ccache \
     --mount=type=tmpfs,target=/tmp \
     bash /ima-rtmr-extend/ubuntu/common/build-kernel.sh /build/linux-6.17*
+
+# Phase 4: sign vmlinuz when MOK secrets are mounted.
+RUN --mount=type=secret,id=mok-key \
+    --mount=type=secret,id=mok-cert \
+    <<EOF
+    set -eEuo pipefail
+    if [[ -f /run/secrets/mok-key && -f /run/secrets/mok-cert ]]; then
+        for deb in /build/linux-image-unsigned-*.deb; do
+            bash /ima-rtmr-extend/ubuntu/common/sign-kernel.sh \
+                /run/secrets/mok-key /run/secrets/mok-cert "$deb"
+        done
+    fi
+EOF
 
 FROM scratch
 COPY --from=build /build/*.deb /

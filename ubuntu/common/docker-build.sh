@@ -14,7 +14,14 @@ out_dir="${variant_dir}/out"
 
 mkdir -p "${out_dir}"
 
+secret_args=()
+if [[ -n ${MOK_KEY:-} && -n ${MOK_CERT:-} ]]; then
+    secret_args+=(--secret "id=mok-key,src=${MOK_KEY}")
+    secret_args+=(--secret "id=mok-cert,src=${MOK_CERT}")
+fi
+
 docker build \
+    "${secret_args[@]+"${secret_args[@]}"}" \
     -f "${variant_dir}/Dockerfile" \
     --output "type=local,dest=${out_dir}" \
     "${project_root}"
