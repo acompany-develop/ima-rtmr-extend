@@ -126,8 +126,10 @@ static bool do_extend(const struct ima_template_entry* entry) {
     }
 
     ret = kernel_write(mr_file_ref, digest, target_digest_size, &pos);
-    if (ret < 0) {
-        pr_warn_ratelimited("RTMR extend failed: %zd\n", ret);
+    if (ret != target_digest_size) {
+        pr_warn_ratelimited("RTMR extend failed: %zd (expected %d)\n",
+                            ret,
+                            target_digest_size);
         if (ret == -ENODEV || ret == -ENXIO) {
             pr_err("RTMR device lost, disabling extension\n");
             extend_disabled = true;
