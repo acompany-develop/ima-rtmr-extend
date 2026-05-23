@@ -6,6 +6,7 @@
 # debian*/config/annotations file in the kernel source tree.
 
 set -eEuo pipefail
+shopt -s nullglob
 
 kernel_src="${1:?"usage: $0 <kernel-source-dir>"}"
 

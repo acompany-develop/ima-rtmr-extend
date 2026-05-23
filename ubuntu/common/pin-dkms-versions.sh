@@ -8,6 +8,7 @@
 # have rolled off the archive.
 
 set -eEuo pipefail
+shopt -s nullglob
 
 kernel_src="${1:?"usage: $0 <kernel-source-dir>"}"
 
