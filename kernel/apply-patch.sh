@@ -33,9 +33,10 @@ if [[ -e "${integrity_dir}/ima_rtmr" ]]; then
     exit 1
 fi
 
-if ln -sfn "${src_dir}" "${integrity_dir}/ima_rtmr" 2>/dev/null; then
+if ln -sfn "${src_dir}" "${integrity_dir}/ima_rtmr" 2>/dev/null && [[ -L "${integrity_dir}/ima_rtmr" ]]; then
     echo "symlink: ${integrity_dir}/ima_rtmr -> ${src_dir}"
 else
+    rm -f "${integrity_dir}/ima_rtmr"
     cp -r "${src_dir}" "${integrity_dir}/ima_rtmr"
     echo "copy: ${src_dir} -> ${integrity_dir}/ima_rtmr"
 fi
