@@ -53,6 +53,14 @@ int ima_rtmr_read_extra_slots(int* out) {
     if (!addr)
         return -ENOENT;
 
-    *out = *(const int*)addr;
+    /* ima_extra_slots is incremented at most twice in ima_init_crypto(); reject
+     * values outside that range to guard against an upstream type change. */
+    {
+        int v = *(const int*)addr;
+
+        if (v < 0 || v > 2)
+            return -ERANGE;
+        *out = v;
+    }
     return 0;
 }
