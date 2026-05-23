@@ -26,11 +26,13 @@ let
                 mkdir -p base mod/security/integrity/ima_rtmr
                 cp -r ${src}/. mod/security/integrity/ima_rtmr/
 
-                # diff returns 1 when files differ (expected here); only 2+ is an error.
-                { diff -urN base mod || test $? -eq 1; } \
-                  | sed -e 's|^--- base/|--- a/|' \
-                        -e 's|^+++ mod/|+++ b/|' \
-                        -e '/^diff -urN /d' \
+                # Sorted enumeration keeps the patch hash stable across hosts.
+                export LC_ALL=C
+                for f in $(cd mod && find . -type f | sort); do
+                    diff -uN "base/$f" "mod/$f" || test $? -eq 1
+                done \
+                  | sed -e 's|^--- base/\./|--- a/|' \
+                        -e 's|^+++ mod/\./|+++ b/|' \
                   > new-files.patch
 
                 cat new-files.patch \
