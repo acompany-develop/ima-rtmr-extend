@@ -46,3 +46,12 @@ jobs:
 
       - name: Build kernel patches
         run: nix build --print-build-logs .#kernelPatch-6_17 .#kernelPatch-7_0
+
+  build-module:
+    name: Build out-of-tree module
+    runs-on: ubuntu-latest
+    container: ubuntu:25.10
+    steps:
+      - uses: actions/checkout@v4
+      - run: apt-get update -qq && apt-get install -y -qq build-essential linux-headers-generic
+      - run: make KDIR=$(ls -d /usr/src/linux-headers-*-generic | head -1)
