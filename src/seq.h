@@ -23,5 +23,6 @@ u64 ima_rtmr_seq_consume(const struct ima_template_entry* entry);
 
 bool ima_rtmr_seq_enabled(void);
 void __init ima_rtmr_seq_activate(void);
+void __init ima_rtmr_seq_deactivate(void);
 
 #endif /* _IMA_RTMR_SEQ_H */

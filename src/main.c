@@ -107,14 +107,15 @@ static int __init ima_rtmr_init(void) {
         goto err_destroy_wq;
     }
 
+    /* Activate first so a pre_handler racing on another CPU sees seq_active=true. */
+    ima_rtmr_seq_activate();
     rc = register_kprobe(&ima_rtmr_seq_kprobe);
     if (rc) {
+        ima_rtmr_seq_deactivate();
         pr_warn("cannot register seq kprobe on ima_add_digest_entry: %d "
                 "(ordering falls back to FIFO)\n",
                 rc);
-        /* non-fatal: module works without sequencing */
     } else {
-        ima_rtmr_seq_activate();
         pr_info("sequencing enabled (kprobe on ima_add_digest_entry)\n");
     }
 

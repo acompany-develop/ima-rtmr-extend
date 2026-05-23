@@ -92,3 +92,7 @@ struct kprobe ima_rtmr_seq_kprobe = {
 void __init ima_rtmr_seq_activate(void) {
     seq_active = true;
 }
+
+void __init ima_rtmr_seq_deactivate(void) {
+    seq_active = false;
+}
