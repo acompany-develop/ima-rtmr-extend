@@ -230,10 +230,16 @@ static void drain_ordered(void) {
     struct extend_request req;
 
     while (kfifo_out_spinlocked(&extend_fifo, &req, 1, &fifo_lock)) {
-        struct pending_extend pe = {
-            .entry = req.entry,
-            .seq = req.seq,
-        };
+        struct pending_extend pe;
+
+        /* Unsequenced entries would wedge position 0 of the reorder buffer. */
+        if (req.seq == 0) {
+            do_extend(req.entry);
+            continue;
+        }
+
+        pe.entry = req.entry;
+        pe.seq = req.seq;
 
         if (reorder_count >= REORDER_BUF_SIZE)
             reorder_force_flush();
