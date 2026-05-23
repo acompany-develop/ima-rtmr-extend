@@ -115,7 +115,7 @@ static bool do_extend(const struct ima_template_entry* entry) {
     loff_t pos = 0;
     ssize_t ret;
 
-    if (extend_disabled)
+    if (READ_ONCE(extend_disabled))
         return true;
 
     digest = find_digest(entry);
@@ -132,7 +132,7 @@ static bool do_extend(const struct ima_template_entry* entry) {
                             target_digest_size);
         if (ret == -ENODEV || ret == -ENXIO) {
             pr_err("RTMR device lost, disabling extension\n");
-            extend_disabled = true;
+            WRITE_ONCE(extend_disabled, true);
         }
         return true;
     }
