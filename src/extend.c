@@ -201,20 +201,24 @@ static void reorder_flush(void) {
 static void reorder_force_flush(void) {
     while (reorder_count > 0) {
         unsigned long flags;
-        u64 jump;
+        u64 head_seq = reorder_buf[0].seq;
 
         pr_warn_ratelimited(
             "forcing extend: expected seq %llu, got %llu\n",
             next_expected_seq,
-            reorder_buf[0].seq);
+            head_seq);
 
         spin_lock_irqsave(&skip_lock, flags);
-        jump = reorder_buf[0].seq + 1 - next_expected_seq;
-        next_expected_seq = reorder_buf[0].seq + 1;
-        if (jump > 0 && jump < SKIP_BITMAP_BITS)
-            shift_skip_bitmap(jump);
-        else if (jump >= SKIP_BITMAP_BITS)
-            bitmap_zero(skip_bitmap, SKIP_BITMAP_BITS);
+        /* Stale head: extend it but don't rewind sequence/bitmap state. */
+        if (head_seq >= next_expected_seq) {
+            u64 jump = head_seq + 1 - next_expected_seq;
+
+            next_expected_seq = head_seq + 1;
+            if (jump < SKIP_BITMAP_BITS)
+                shift_skip_bitmap(jump);
+            else
+                bitmap_zero(skip_bitmap, SKIP_BITMAP_BITS);
+        }
         spin_unlock_irqrestore(&skip_lock, flags);
 
         do_extend(reorder_buf[0].entry);
