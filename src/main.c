@@ -82,8 +82,15 @@ static int __init ima_rtmr_init(void) {
         rc = -ENODEV;
         goto err_close;
     }
-    /* IMA allocates nr_allocated_banks + ima_extra_slots (at most 2) digests */
-    num_banks = chip->nr_allocated_banks + 2;
+    /* IMA digest array = nr_allocated_banks + ima_extra_slots; fall back to banks only on lookup failure. */
+    {
+        int extra_slots = 0;
+        rc = ima_rtmr_read_extra_slots(&extra_slots);
+        if (rc)
+            pr_warn("cannot resolve ima_extra_slots (%d); scanning TPM banks only\n",
+                    rc);
+        num_banks = chip->nr_allocated_banks + extra_slots;
+    }
     put_device(&chip->dev);
 
     extend_wq = alloc_ordered_workqueue("ima_rtmr", 0);
