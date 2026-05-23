@@ -20,6 +20,10 @@
 #error "ima_rtmr requires CONFIG_TSM_MEASUREMENTS=y (tsm-mr framework)"
 #endif
 
+#if IS_ENABLED(CONFIG_LTO_CLANG)
+#error "ima_rtmr cannot be built against CONFIG_LTO_CLANG kernels: ima_add_digest_entry gets inlined and the sequencing kprobe cannot be registered."
+#endif
+
 #include <linux/list.h>
 #include <linux/tpm.h>
 #include <linux/types.h>
