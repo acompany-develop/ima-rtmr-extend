@@ -266,7 +266,16 @@ static void drain_fifo(void) {
         do_extend(req.entry);
 }
 
+/*
+ * Stall-recovery threshold: number of consecutive workqueue runs with no
+ * progress and no new entries arriving before we assume the missing seq
+ * will never come (typically a nmissed kretprobe) and force-flush.
+ */
+#define STALL_LIMIT 32
+
 static void extend_work_fn(struct work_struct* work) {
+    static u64 last_seen_next_expected;
+    static unsigned int stall;
     static unsigned int last_nmissed;
     unsigned int missed = ima_rtmr_kretprobe.nmissed;
 
@@ -282,8 +291,23 @@ static void extend_work_fn(struct work_struct* work) {
     else
         drain_fifo();
 
-    if (reorder_count > 0)
+    if (reorder_count > 0) {
+        if (next_expected_seq != last_seen_next_expected) {
+            stall = 0;
+            last_seen_next_expected = next_expected_seq;
+        } else if (kfifo_is_empty(&extend_fifo) && ++stall >= STALL_LIMIT) {
+            /* A nmissed kretprobe leaves a permanent gap; advance past it. */
+            pr_warn_ratelimited("stall recovery: force-flushing %d entries past missing seq %llu\n",
+                                reorder_count,
+                                next_expected_seq);
+            reorder_force_flush();
+            stall = 0;
+            last_seen_next_expected = next_expected_seq;
+        }
         queue_work(extend_wq, &extend_work);
+    } else {
+        stall = 0;
+    }
 }
 
 void ima_rtmr_extend_init(struct file* mr_file, u16 alg_id, int digest_size, int num_banks) {
