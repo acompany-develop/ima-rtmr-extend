@@ -64,7 +64,7 @@ u64 ima_rtmr_seq_consume(const struct ima_template_entry* entry) {
     u64 seq = 0;
     int i;
 
-    if (!seq_active)
+    if (!READ_ONCE(seq_active))
         return 0;
 
     spin_lock_irqsave(&seq_map_lock, flags);
@@ -81,7 +81,7 @@ u64 ima_rtmr_seq_consume(const struct ima_template_entry* entry) {
 }
 
 bool ima_rtmr_seq_enabled(void) {
-    return seq_active;
+    return READ_ONCE(seq_active);
 }
 
 struct kprobe ima_rtmr_seq_kprobe = {
@@ -90,9 +90,9 @@ struct kprobe ima_rtmr_seq_kprobe = {
 };
 
 void __init ima_rtmr_seq_activate(void) {
-    seq_active = true;
+    WRITE_ONCE(seq_active, true);
 }
 
 void __init ima_rtmr_seq_deactivate(void) {
-    seq_active = false;
+    WRITE_ONCE(seq_active, false);
 }
