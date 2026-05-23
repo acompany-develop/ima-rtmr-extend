@@ -110,34 +110,30 @@ static const u8* find_digest(const struct ima_template_entry* entry) {
     return NULL;
 }
 
-static bool do_extend(const struct ima_template_entry* entry) {
+/* Stop on first failure: a partial chain is worse than a clean stop. */
+static void do_extend(const struct ima_template_entry* entry) {
     const u8* digest;
     loff_t pos = 0;
     ssize_t ret;
 
     if (READ_ONCE(extend_disabled))
-        return true;
+        return;
 
     digest = find_digest(entry);
     if (!digest) {
-        pr_warn_ratelimited("no digest for alg_id 0x%04x in entry\n",
-                            target_alg_id);
-        return true;
+        pr_err("no digest for alg_id 0x%04x, disabling extension\n",
+               target_alg_id);
+        WRITE_ONCE(extend_disabled, true);
+        return;
     }
 
     ret = kernel_write(mr_file_ref, digest, target_digest_size, &pos);
     if (ret != target_digest_size) {
-        pr_warn_ratelimited("RTMR extend failed: %zd (expected %d)\n",
-                            ret,
-                            target_digest_size);
-        if (ret == -ENODEV || ret == -ENXIO) {
-            pr_err("RTMR device lost, disabling extension\n");
-            WRITE_ONCE(extend_disabled, true);
-        }
-        return true;
+        pr_err("RTMR extend failed: %zd (expected %d), disabling extension\n",
+               ret,
+               target_digest_size);
+        WRITE_ONCE(extend_disabled, true);
     }
-
-    return true;
 }
 
 /* Insertion sort by seq. */
