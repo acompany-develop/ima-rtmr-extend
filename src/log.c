@@ -26,20 +26,22 @@ static unsigned long skip_count;
 int __init ima_rtmr_log_init(void) {
     unsigned long addr = ima_rtmr_ksym_lookup("ima_measurements");
     struct list_head* p;
+    unsigned long n = 0;
 
     if (!addr) {
         pr_err("cannot resolve ima_measurements symbol\n");
         return -ENOENT;
     }
-    ima_log_head = (struct list_head*)addr;
+    WRITE_ONCE(ima_log_head, (struct list_head*)addr);
 
     /* Start past the current tail so pre-load entries are not re-extended.
      * Count them so the verifier can skip ahead instead of scanning. */
     rcu_read_lock();
     list_for_each_rcu(p, ima_log_head)
-        skip_count++;
-    cursor = rcu_dereference(ima_log_head->prev);
+        n++;
+    WRITE_ONCE(cursor, rcu_dereference(ima_log_head->prev));
     rcu_read_unlock();
+    WRITE_ONCE(skip_count, n);
     return 0;
 }
 
@@ -49,20 +51,20 @@ void ima_rtmr_log_advance(void) {
     /* Snapshot the tail so a steady stream of new entries cannot pin this
      * worker indefinitely; the next kretprobe re-queues us for the rest. */
     rcu_read_lock();
-    tail = rcu_dereference(ima_log_head->prev);
+    tail = rcu_dereference(READ_ONCE(ima_log_head)->prev);
     rcu_read_unlock();
 
-    while (cursor != tail) {
+    while (READ_ONCE(cursor) != tail) {
         struct list_head* next;
         struct ima_queue_entry* qe;
 
         /* IMA entries are never freed, so the dereferenced pointer stays
          * valid outside any RCU read-side critical section. */
-        next = rcu_dereference_check(cursor->next, 1);
+        next = rcu_dereference_check(READ_ONCE(cursor)->next, 1);
 
         qe = list_entry(next, struct ima_queue_entry, later);
         ima_rtmr_do_extend(qe->entry);
-        cursor = next;
+        WRITE_ONCE(cursor, next);
         atomic_long_inc(&extended_count);
     }
 }
@@ -72,5 +74,5 @@ unsigned long ima_rtmr_log_extended_count(void) {
 }
 
 unsigned long ima_rtmr_log_skip_count(void) {
-    return skip_count;
+    return READ_ONCE(skip_count);
 }

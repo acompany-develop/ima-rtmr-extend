@@ -39,7 +39,7 @@ static ssize_t skip_count_show(struct kobject* k, struct kobj_attribute* a, char
 }
 
 static ssize_t nmissed_show(struct kobject* k, struct kobj_attribute* a, char* buf) {
-    return sysfs_emit(buf, "%u\n", ima_rtmr_kretprobe.nmissed);
+    return sysfs_emit(buf, "%d\n", READ_ONCE(ima_rtmr_kretprobe.nmissed));
 }
 
 static struct kobj_attribute initial_attr = __ATTR_RO(initial);
