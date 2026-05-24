@@ -132,7 +132,6 @@ err_close:
 
 static void __exit ima_rtmr_exit(void) {
     unregister_kretprobe(&ima_rtmr_kretprobe);
-    flush_workqueue(extend_wq);
     destroy_workqueue(extend_wq);
 
     if (ima_rtmr_kretprobe.nmissed)
