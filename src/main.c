@@ -13,7 +13,6 @@
 #include <linux/module.h>
 #include <linux/tpm.h>
 
-#include "consts.h"
 #include "detect.h"
 #include "extend.h"
 #include "handler.h"
