@@ -35,7 +35,7 @@ const struct hash_alg_info* lookup_alg(const char* name) {
     return NULL;
 }
 
-unsigned long ima_rtmr_ksym_lookup(const char* name) {
+unsigned long __init ima_rtmr_ksym_lookup(const char* name) {
     static unsigned long (*lookup_fn)(const char*);
 
     if (!lookup_fn) {
@@ -49,7 +49,7 @@ unsigned long ima_rtmr_ksym_lookup(const char* name) {
     return lookup_fn(name);
 }
 
-int ima_rtmr_read_extra_slots(int* out) {
+int __init ima_rtmr_read_extra_slots(int* out) {
     unsigned long addr = ima_rtmr_ksym_lookup("ima_extra_slots");
     int v;
 
