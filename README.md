@@ -65,19 +65,22 @@ nix fmt              # ソース全体をフォーマット
 ## 検証
 
 ```sh
-# モジュールロード・ポリシー設定後、ベースラインを取得
-skip=$(sudo cat /sys/kernel/security/ima/ascii_runtime_measurements_sha384 | wc -l)
-baseline=$(sudo xxd -p /sys/class/misc/tdx_guest/measurements/rtmr2:sha384 | tr -d '\n')
+# モジュールロード前の RTMR 値は sysfs で参照可能
+baseline=$(sudo cat /sys/kernel/ima_rtmr/initial)
 
 # IMA 計測をトリガー（バイナリ実行やファイル読み取り等）
 # ...
 
-# RTMR リプレイ検証
-sudo ./validate.py "$baseline" "$skip"
+# RTMR リプレイ検証（skip=0 で IMA ログ先頭から再生）
+sudo ./validate.py "$baseline" 0
 
 # Bash実装 (遅いです)
-sudo ./validate.sh "$baseline" "$skip"
+sudo ./validate.sh "$baseline" 0
 ```
+
+`sudo cat /sys/kernel/ima_rtmr/{disabled,drops,nmissed,seq_enabled}` でモジュール健全性を
+確認できます。`disabled=1` や `drops>0` のときは RTMR と IMA ログの整合性が破綻している
+可能性があります。詳細は [仕組み](docs/mechanism.md#sysfs-インターフェース) を参照してください。
 
 ## ライセンス
 

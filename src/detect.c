@@ -22,7 +22,7 @@ struct file* ima_rtmr_detect(const char** used_path) {
     int i;
 
     for (i = 0; i < ARRAY_SIZE(candidate_paths); i++) {
-        f = filp_open(candidate_paths[i], O_WRONLY, 0);
+        f = filp_open(candidate_paths[i], O_RDWR, 0);
         if (!IS_ERR(f)) {
             *used_path = candidate_paths[i];
             return f;
@@ -30,4 +30,13 @@ struct file* ima_rtmr_detect(const char** used_path) {
     }
 
     return ERR_PTR(-ENODEV);
+}
+
+int ima_rtmr_snapshot_initial(struct file* mr_file, int digest_size, u8* out) {
+    loff_t pos = 0;
+    ssize_t ret = kernel_read(mr_file, out, digest_size, &pos);
+
+    if (ret != digest_size)
+        return (ret < 0) ? (int)ret : -EIO;
+    return 0;
 }

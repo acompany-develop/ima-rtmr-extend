@@ -97,6 +97,10 @@ int ima_rtmr_fifo_in(const struct extend_request* req) {
     return kfifo_in_spinlocked(&extend_fifo, req, 1, &fifo_lock);
 }
 
+bool ima_rtmr_extend_disabled(void) {
+    return READ_ONCE(extend_disabled);
+}
+
 static const u8* find_digest(const struct ima_template_entry* entry) {
     int i;
 

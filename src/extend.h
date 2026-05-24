@@ -15,5 +15,6 @@ extern struct work_struct extend_work;
 void ima_rtmr_extend_init(struct file* mr_file, u16 alg_id, int digest_size, int num_banks);
 int ima_rtmr_fifo_in(const struct extend_request* req);
 void ima_rtmr_seq_skip(u64 seq);
+bool ima_rtmr_extend_disabled(void);
 
 #endif /* _IMA_RTMR_EXTEND_H */

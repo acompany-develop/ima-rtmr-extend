@@ -19,6 +19,7 @@
 #include "extend.h"
 #include "handler.h"
 #include "seq.h"
+#include "sysfs.h"
 #include "utils.h"
 
 static char* mr_path = "";
@@ -38,7 +39,7 @@ static int __init ima_rtmr_init(void) {
     int rc;
 
     if (mr_path[0] != '\0') {
-        mr_file = filp_open(mr_path, O_WRONLY, 0);
+        mr_file = filp_open(mr_path, O_RDWR, 0);
         if (IS_ERR(mr_file)) {
             pr_err("cannot open %s: %ld\n",
                    mr_path,
@@ -101,10 +102,16 @@ static int __init ima_rtmr_init(void) {
 
     ima_rtmr_extend_init(mr_file, alg->alg_id, alg->digest_size, num_banks);
 
+    rc = ima_rtmr_sysfs_init(mr_file, alg->digest_size);
+    if (rc) {
+        pr_err("cannot init sysfs: %d\n", rc);
+        goto err_destroy_wq;
+    }
+
     rc = register_kretprobe(&ima_rtmr_kretprobe);
     if (rc) {
         pr_err("cannot register kretprobe: %d\n", rc);
-        goto err_destroy_wq;
+        goto err_sysfs_exit;
     }
 
     /* Activate first so a pre_handler racing on another CPU sees seq_active=true. */
@@ -122,6 +129,8 @@ static int __init ima_rtmr_init(void) {
     pr_info("loaded (%s, digest %d bytes)\n", hash_name, alg->digest_size);
     return 0;
 
+err_sysfs_exit:
+    ima_rtmr_sysfs_exit();
 err_destroy_wq:
     destroy_workqueue(extend_wq);
 err_close:
@@ -144,6 +153,7 @@ static void __exit ima_rtmr_exit(void) {
         pr_info("%ld measurements dropped (FIFO full)\n",
                 atomic_long_read(&ima_rtmr_drops));
 
+    ima_rtmr_sysfs_exit();
     filp_close(mr_file, NULL);
 
     pr_info("unloaded\n");
