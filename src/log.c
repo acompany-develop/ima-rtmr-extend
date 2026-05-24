@@ -44,16 +44,21 @@ int __init ima_rtmr_log_init(void) {
 }
 
 void ima_rtmr_log_advance(void) {
-    for (;;) {
+    struct list_head* tail;
+
+    /* Snapshot the tail so a steady stream of new entries cannot pin this
+     * worker indefinitely; the next kretprobe re-queues us for the rest. */
+    rcu_read_lock();
+    tail = rcu_dereference(ima_log_head->prev);
+    rcu_read_unlock();
+
+    while (cursor != tail) {
         struct list_head* next;
         struct ima_queue_entry* qe;
 
         rcu_read_lock();
         next = rcu_dereference(cursor->next);
         rcu_read_unlock();
-
-        if (next == ima_log_head)
-            return;
 
         qe = list_entry(next, struct ima_queue_entry, later);
         ima_rtmr_do_extend(qe->entry);
