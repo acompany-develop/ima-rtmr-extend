@@ -21,9 +21,11 @@
 static struct list_head* ima_log_head;
 static struct list_head* cursor;
 static atomic_long_t extended_count;
+static unsigned long skip_count;
 
 int __init ima_rtmr_log_init(void) {
     unsigned long addr = ima_rtmr_ksym_lookup("ima_measurements");
+    struct list_head* p;
 
     if (!addr) {
         pr_err("cannot resolve ima_measurements symbol\n");
@@ -31,8 +33,11 @@ int __init ima_rtmr_log_init(void) {
     }
     ima_log_head = (struct list_head*)addr;
 
-    /* Start past the current tail so pre-load entries are not re-extended. */
+    /* Start past the current tail so pre-load entries are not re-extended.
+     * Count them so the verifier can skip ahead instead of scanning. */
     rcu_read_lock();
+    list_for_each_rcu(p, ima_log_head)
+        skip_count++;
     cursor = rcu_dereference(ima_log_head->prev);
     rcu_read_unlock();
     return 0;
@@ -59,4 +64,8 @@ void ima_rtmr_log_advance(void) {
 
 unsigned long ima_rtmr_log_extended_count(void) {
     return (unsigned long)atomic_long_read(&extended_count);
+}
+
+unsigned long ima_rtmr_log_skip_count(void) {
+    return skip_count;
 }

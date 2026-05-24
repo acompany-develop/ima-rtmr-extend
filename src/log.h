@@ -6,5 +6,6 @@
 int ima_rtmr_log_init(void);
 void ima_rtmr_log_advance(void);
 unsigned long ima_rtmr_log_extended_count(void);
+unsigned long ima_rtmr_log_skip_count(void);
 
 #endif /* _IMA_RTMR_LOG_H */

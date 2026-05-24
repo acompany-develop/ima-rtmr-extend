@@ -34,6 +34,10 @@ static ssize_t extended_count_show(struct kobject* k, struct kobj_attribute* a, 
     return sysfs_emit(buf, "%lu\n", ima_rtmr_log_extended_count());
 }
 
+static ssize_t skip_count_show(struct kobject* k, struct kobj_attribute* a, char* buf) {
+    return sysfs_emit(buf, "%lu\n", ima_rtmr_log_skip_count());
+}
+
 static ssize_t nmissed_show(struct kobject* k, struct kobj_attribute* a, char* buf) {
     return sysfs_emit(buf, "%u\n", ima_rtmr_kretprobe.nmissed);
 }
@@ -41,12 +45,14 @@ static ssize_t nmissed_show(struct kobject* k, struct kobj_attribute* a, char* b
 static struct kobj_attribute initial_attr = __ATTR_RO(initial);
 static struct kobj_attribute disabled_attr = __ATTR_RO(disabled);
 static struct kobj_attribute extended_count_attr = __ATTR_RO(extended_count);
+static struct kobj_attribute skip_count_attr = __ATTR_RO(skip_count);
 static struct kobj_attribute nmissed_attr = __ATTR_RO(nmissed);
 
 static struct attribute* ima_rtmr_attrs[] = {
     &initial_attr.attr,
     &disabled_attr.attr,
     &extended_count_attr.attr,
+    &skip_count_attr.attr,
     &nmissed_attr.attr,
     NULL,
 };

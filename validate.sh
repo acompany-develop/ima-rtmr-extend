@@ -15,8 +15,16 @@ if ((EUID != 0)); then
     exit 1
 fi
 
-rtmr="${1:?"usage: $0 <initial_rtmr_hex> [skip_count]"}"
-skip="${2:-"1"}"
+sysfs_dir="${SYSFS_DIR:-/sys/kernel/ima_rtmr}"
+rtmr="${1:-}"
+skip="${2:-}"
+
+if [[ -z $rtmr ]]; then
+    rtmr=$(cat "${sysfs_dir}/initial")
+fi
+if [[ -z $skip ]]; then
+    skip=$(cat "${sysfs_dir}/skip_count")
+fi
 
 actual_rtmr="$(xxd -p /sys/class/misc/tdx_guest/measurements/rtmr2:sha384 | tr -d '\n')"
 

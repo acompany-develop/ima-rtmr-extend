@@ -5,9 +5,11 @@
 import argparse
 import hashlib
 import sys
+from pathlib import Path
 
 DEFAULT_RTMR = "/sys/class/misc/tdx_guest/measurements/rtmr2:sha384"
 DEFAULT_LOG = "/sys/kernel/security/ima/ascii_runtime_measurements_sha384"
+DEFAULT_SYSFS = "/sys/kernel/ima_rtmr"
 
 
 def parse_digest(token: str) -> bytes:
@@ -34,14 +36,19 @@ def replay_from(
 
 def main() -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("initial_rtmr")
-    p.add_argument("skip", nargs="?", type=int, default=1)
+    p.add_argument("initial_rtmr", nargs="?", help=f"hex digest; default: read from {DEFAULT_SYSFS}/initial")
+    p.add_argument("skip", nargs="?", type=int, help=f"entries to skip; default: read from {DEFAULT_SYSFS}/skip_count")
     p.add_argument("--rtmr", default=DEFAULT_RTMR)
     p.add_argument("--log", default=DEFAULT_LOG)
+    p.add_argument("--sysfs", default=DEFAULT_SYSFS)
     p.add_argument("--no-search", action="store_true")
     args = p.parse_args()
 
-    baseline: bytes = bytes.fromhex(args.initial_rtmr)
+    sysfs = Path(args.sysfs)
+    initial_hex = args.initial_rtmr or (sysfs / "initial").read_text().strip()
+    skip = args.skip if args.skip is not None else int((sysfs / "skip_count").read_text().strip())
+
+    baseline: bytes = bytes.fromhex(initial_hex)
     with open(args.rtmr, "rb") as f:
         actual: bytes = f.read()
     digests: list[bytes] = load_log(args.log)
@@ -50,23 +57,23 @@ def main() -> int:
     print(f"log entries: {total}")
     print(f"actual rtmr: {actual.hex()}")
 
-    end = replay_from(baseline, digests, actual, args.skip)
+    end = replay_from(baseline, digests, actual, skip)
     if end is not None:
-        print(f"MATCH (direct): skip={args.skip} end={end} replayed={end - args.skip}")
+        print(f"MATCH (direct): skip={skip} end={end} replayed={end - skip}")
         return 0
 
-    print(f"no match with skip={args.skip}")
+    print(f"no match with skip={skip}")
     if args.no_search:
         return 1
 
     print("scanning start indices...")
     for s in range(total):
-        if s == args.skip:
+        if s == skip:
             continue
         end = replay_from(baseline, digests, actual, s)
         if end is not None:
             print(
-                f"MATCH (scan): skip={s} end={end} replayed={end - s} (delta {s - args.skip:+d})"
+                f"MATCH (scan): skip={s} end={end} replayed={end - s} (delta {s - skip:+d})"
             )
             return 0
 
