@@ -75,17 +75,23 @@ static int __init ima_rtmr_init(void) {
         goto err_close;
     }
 
+    /* IMA's digest array size = NR_BANKS(chip) + ima_extra_slots;
+     * NR_BANKS() falls back to 0 when no TPM is present. */
     chip = tpm_default_chip();
-    if (!chip) {
-        pr_err("no TPM chip available\n");
-        rc = -ENODEV;
-        goto err_close;
-    }
+    num_banks = chip ? chip->nr_allocated_banks : 0;
+    if (chip)
+        put_device(&chip->dev);
+
     rc = ima_rtmr_read_extra_slots(&extra_slots);
-    if (rc)
+    if (rc) {
+        if (num_banks == 0) {
+            pr_err("no TPM and cannot resolve ima_extra_slots (%d)\n", rc);
+            goto err_close;
+        }
         pr_warn("cannot resolve ima_extra_slots (%d); scanning TPM banks only\n", rc);
-    num_banks = chip->nr_allocated_banks + extra_slots;
-    put_device(&chip->dev);
+    } else {
+        num_banks += extra_slots;
+    }
 
     extend_wq = alloc_ordered_workqueue("ima_rtmr", 0);
     if (!extend_wq) {
