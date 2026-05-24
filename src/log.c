@@ -56,9 +56,9 @@ void ima_rtmr_log_advance(void) {
         struct list_head* next;
         struct ima_queue_entry* qe;
 
-        rcu_read_lock();
-        next = rcu_dereference(cursor->next);
-        rcu_read_unlock();
+        /* IMA entries are never freed, so the dereferenced pointer stays
+         * valid outside any RCU read-side critical section. */
+        next = rcu_dereference_check(cursor->next, 1);
 
         qe = list_entry(next, struct ima_queue_entry, later);
         ima_rtmr_do_extend(qe->entry);
