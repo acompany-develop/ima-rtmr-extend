@@ -51,6 +51,12 @@ def main() -> int:
     baseline: bytes = bytes.fromhex(initial_hex)
     with open(args.rtmr, "rb") as f:
         actual: bytes = f.read()
+    if len(baseline) != len(actual):
+        print(
+            f"initial RTMR length {len(baseline)} does not match actual {len(actual)}",
+            file=sys.stderr,
+        )
+        return 1
     digests: list[bytes] = load_log(args.log)
     total: int = len(digests)
 
