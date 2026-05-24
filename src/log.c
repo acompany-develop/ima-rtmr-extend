@@ -16,7 +16,7 @@
 
 #include "extend.h"
 #include "ima.h"
-#include "ksym.h"
+#include "utils.h"
 
 static struct list_head* ima_log_head;
 static struct list_head* cursor;

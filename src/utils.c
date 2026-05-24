@@ -2,16 +2,15 @@
 /*
  * Copyright (c) 2026 Acompany Co., Ltd.
  *
- * Hash algorithm helpers.
+ * Hash algorithm table and kernel-symbol resolution helpers.
  */
 
 #include "utils.h"
 
 #include <linux/errno.h>
+#include <linux/kprobes.h>
 #include <linux/string.h>
 #include <linux/tpm.h>
-
-#include "ksym.h"
 
 static const struct hash_alg_info supported_algs[] = {
     {"sha1", TPM_ALG_SHA1, 20},
@@ -33,8 +32,21 @@ const struct hash_alg_info* lookup_alg(const char* name) {
         if (strcmp(supported_algs[i].name, name) == 0)
             return &supported_algs[i];
     }
-
     return NULL;
+}
+
+unsigned long ima_rtmr_ksym_lookup(const char* name) {
+    static unsigned long (*lookup_fn)(const char*);
+
+    if (!lookup_fn) {
+        struct kprobe kp = {.symbol_name = "kallsyms_lookup_name"};
+
+        if (register_kprobe(&kp) < 0)
+            return 0;
+        lookup_fn = (void*)kp.addr;
+        unregister_kprobe(&kp);
+    }
+    return lookup_fn(name);
 }
 
 int ima_rtmr_read_extra_slots(int* out) {
@@ -44,11 +56,9 @@ int ima_rtmr_read_extra_slots(int* out) {
     if (!addr)
         return -ENOENT;
 
-    /*
-     * ima_extra_slots is incremented at most twice in ima_init_crypto();
+    /* ima_extra_slots is incremented at most twice in ima_init_crypto();
      * reject values outside that range to guard against an upstream type
-     * change that would silently corrupt the digest array bound.
-     */
+     * change that would silently corrupt the digest array bound. */
     v = *(const int*)addr;
     if (v < 0 || v > 2)
         return -ERANGE;
