@@ -8,9 +8,10 @@
 #include "utils.h"
 
 #include <linux/errno.h>
-#include <linux/kprobes.h>
 #include <linux/string.h>
 #include <linux/tpm.h>
+
+#include "ksym.h"
 
 static const struct hash_alg_info supported_algs[] = {
     {"sha1", TPM_ALG_SHA1, 20},
@@ -36,31 +37,21 @@ const struct hash_alg_info* lookup_alg(const char* name) {
     return NULL;
 }
 
-/* kallsyms_lookup_name has been unexported since v5.7; trampoline via a kprobe on its symbol. */
 int ima_rtmr_read_extra_slots(int* out) {
-    struct kprobe kp = {.symbol_name = "kallsyms_lookup_name"};
-    unsigned long (*lookup_fn)(const char*);
-    unsigned long addr;
-    int rc;
+    unsigned long addr = ima_rtmr_ksym_lookup("ima_extra_slots");
+    int v;
 
-    rc = register_kprobe(&kp);
-    if (rc < 0)
-        return rc;
-    lookup_fn = (void*)kp.addr;
-    unregister_kprobe(&kp);
-
-    addr = lookup_fn("ima_extra_slots");
     if (!addr)
         return -ENOENT;
 
-    /* ima_extra_slots is incremented at most twice in ima_init_crypto(); reject
-     * values outside that range to guard against an upstream type change. */
-    {
-        int v = *(const int*)addr;
-
-        if (v < 0 || v > 2)
-            return -ERANGE;
-        *out = v;
-    }
+    /*
+     * ima_extra_slots is incremented at most twice in ima_init_crypto();
+     * reject values outside that range to guard against an upstream type
+     * change that would silently corrupt the digest array bound.
+     */
+    v = *(const int*)addr;
+    if (v < 0 || v > 2)
+        return -ERANGE;
+    *out = v;
     return 0;
 }

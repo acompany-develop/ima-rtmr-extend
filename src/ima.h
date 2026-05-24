@@ -2,13 +2,8 @@
 /*
  * Copyright (c) 2026 Acompany Co., Ltd.
  *
- * IMA internal structure definitions.
- *
- * Copied from security/integrity/ima/ima.h which is not exported via
- * public kernel headers. Must be kept in sync with the target kernel.
- *
- * Last synced with: Linux 6.17
- * Structure layout has been stable since v5.6 (tpm_digest *digests).
+ * Mirror of struct definitions from security/integrity/ima/ima.h
+ * (not exported via public headers). Layouts stable since v5.6.
  */
 
 #ifndef _IMA_RTMR_IMA_H
@@ -18,10 +13,6 @@
 
 #if !IS_ENABLED(CONFIG_TSM_MEASUREMENTS)
 #error "ima_rtmr requires CONFIG_TSM_MEASUREMENTS=y (tsm-mr framework)"
-#endif
-
-#if IS_ENABLED(CONFIG_LTO_CLANG)
-#error "ima_rtmr cannot be built against CONFIG_LTO_CLANG kernels: ima_add_digest_entry gets inlined and the sequencing kprobe cannot be registered."
 #endif
 
 #include <linux/list.h>
@@ -49,6 +40,12 @@ struct ima_template_entry {
     struct ima_template_desc* template_desc;
     u32 template_data_len;
     struct ima_field_data template_data[];
+};
+
+struct ima_queue_entry {
+    struct hlist_node hnext;
+    struct list_head later;
+    struct ima_template_entry* entry;
 };
 
 #endif /* _IMA_RTMR_IMA_H */

@@ -3,8 +3,7 @@
  * Copyright (c) 2026 Acompany Co., Ltd.
  *
  * Extend IMA measurements to Confidential Computing runtime measurement
- * registers (RTMRs) via the tsm-mr sysfs interface. Works with any CC
- * architecture (Intel TDX, ARM CCA, ...) that implements tsm-mr.
+ * registers (RTMRs) via the tsm-mr sysfs interface.
  */
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
@@ -18,7 +17,7 @@
 #include "detect.h"
 #include "extend.h"
 #include "handler.h"
-#include "seq.h"
+#include "log.h"
 #include "sysfs.h"
 #include "utils.h"
 
@@ -36,14 +35,13 @@ static int __init ima_rtmr_init(void) {
     const char* hash_name;
     const char* path;
     int num_banks;
+    int extra_slots = 0;
     int rc;
 
     if (mr_path[0] != '\0') {
         mr_file = filp_open(mr_path, O_RDWR, 0);
         if (IS_ERR(mr_file)) {
-            pr_err("cannot open %s: %ld\n",
-                   mr_path,
-                   PTR_ERR(mr_file));
+            pr_err("cannot open %s: %ld\n", mr_path, PTR_ERR(mr_file));
             return PTR_ERR(mr_file);
         }
         path = mr_path;
@@ -83,15 +81,10 @@ static int __init ima_rtmr_init(void) {
         rc = -ENODEV;
         goto err_close;
     }
-    /* IMA digest array = nr_allocated_banks + ima_extra_slots; fall back to banks only on lookup failure. */
-    {
-        int extra_slots = 0;
-        rc = ima_rtmr_read_extra_slots(&extra_slots);
-        if (rc)
-            pr_warn("cannot resolve ima_extra_slots (%d); scanning TPM banks only\n",
-                    rc);
-        num_banks = chip->nr_allocated_banks + extra_slots;
-    }
+    rc = ima_rtmr_read_extra_slots(&extra_slots);
+    if (rc)
+        pr_warn("cannot resolve ima_extra_slots (%d); scanning TPM banks only\n", rc);
+    num_banks = chip->nr_allocated_banks + extra_slots;
     put_device(&chip->dev);
 
     extend_wq = alloc_ordered_workqueue("ima_rtmr", 0);
@@ -101,6 +94,12 @@ static int __init ima_rtmr_init(void) {
     }
 
     ima_rtmr_extend_init(mr_file, alg->alg_id, alg->digest_size, num_banks);
+
+    rc = ima_rtmr_log_init();
+    if (rc) {
+        pr_err("cannot init log walker: %d\n", rc);
+        goto err_destroy_wq;
+    }
 
     rc = ima_rtmr_sysfs_init(mr_file, alg->digest_size);
     if (rc) {
@@ -112,18 +111,6 @@ static int __init ima_rtmr_init(void) {
     if (rc) {
         pr_err("cannot register kretprobe: %d\n", rc);
         goto err_sysfs_exit;
-    }
-
-    /* Activate first so a pre_handler racing on another CPU sees seq_active=true. */
-    ima_rtmr_seq_activate();
-    rc = register_kprobe(&ima_rtmr_seq_kprobe);
-    if (rc) {
-        ima_rtmr_seq_deactivate();
-        pr_warn("cannot register seq kprobe on ima_add_digest_entry: %d "
-                "(ordering falls back to FIFO)\n",
-                rc);
-    } else {
-        pr_info("sequencing enabled (kprobe on ima_add_digest_entry)\n");
     }
 
     pr_info("loaded (%s, digest %d bytes)\n", hash_name, alg->digest_size);
@@ -139,19 +126,12 @@ err_close:
 }
 
 static void __exit ima_rtmr_exit(void) {
-    if (ima_rtmr_seq_enabled())
-        unregister_kprobe(&ima_rtmr_seq_kprobe);
     unregister_kretprobe(&ima_rtmr_kretprobe);
-
     flush_workqueue(extend_wq);
     destroy_workqueue(extend_wq);
 
     if (ima_rtmr_kretprobe.nmissed)
-        pr_info("%d probe instances missed\n",
-                ima_rtmr_kretprobe.nmissed);
-    if (atomic_long_read(&ima_rtmr_drops))
-        pr_info("%ld measurements dropped (FIFO full)\n",
-                atomic_long_read(&ima_rtmr_drops));
+        pr_info("%d probe instances missed\n", ima_rtmr_kretprobe.nmissed);
 
     ima_rtmr_sysfs_exit();
     filp_close(mr_file, NULL);

@@ -6,15 +6,14 @@
 #include <linux/types.h>
 #include <linux/workqueue.h>
 
-struct extend_request;
 struct file;
+struct ima_template_entry;
 
 extern struct workqueue_struct* extend_wq;
 extern struct work_struct extend_work;
 
 void ima_rtmr_extend_init(struct file* mr_file, u16 alg_id, int digest_size, int num_banks);
-int ima_rtmr_fifo_in(const struct extend_request* req);
-void ima_rtmr_seq_skip(u64 seq);
+void ima_rtmr_do_extend(const struct ima_template_entry* entry);
 bool ima_rtmr_extend_disabled(void);
 
 #endif /* _IMA_RTMR_EXTEND_H */

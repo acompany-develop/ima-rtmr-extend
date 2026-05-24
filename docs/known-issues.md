@@ -5,28 +5,29 @@ Copyright (c) 2026 Acompany Co., Ltd.
 
 # 既知の問題
 
-## 問題 1: IMA ログの開始地点が Verifier 側からわからない
+## 問題 1: ロード前の IMA エントリは RTMR に反映されない
 
-カーネルモジュールは任意のタイミングでロードできるため、IMA ログのどの地点から
-RTMR[2] への拡張が開始されたのかを Verifier 側は感知できません。`insmod` 自体も
-IMA 計測を誘発しますが、kretprobe が登録されるのはモジュール初期化の最後であるため、
-insmod 中に生成された IMA エントリはログには存在するが RTMR には拡張されません。
+モジュールがロードされる前に発生した IMA 計測は RTMR に extend されません。
+これに対しては、`/sys/kernel/ima_rtmr/initial` がモジュール介入直前の RTMR 値を
+保持しているため、Verifier はこれをリプレイの baseline として使うことで
+ロード前エントリの影響を回避できます。
 
-カーネルに組み込む（built-in）場合はこの問題を回避でき、boot_aggregate を含む
+`insmod` 自体も IMA 計測を誘発しますが、これは kretprobe 登録より前に発生するため
+本モジュールは捕捉できません。`initial` の値はこの insmod-由来エントリも含めた状態の
+RTMR を反映しています。
+
+カーネルに組み込む（built-in）場合はこの問題自体を回避でき、`boot_aggregate` を含む
 全エントリを捕捉できます。ビルド方法は [Ubuntu カーネルビルド](../ubuntu/README.md)
 を参照してください。
 
-## 補足: 並行計測時の順序保証
+## 問題 2: async window 中の attestation
 
-複数 CPU で同時に IMA 計測が発生した場合、kretprobe の発火順序は IMA ログの正規順序と
-異なることがあります。これに対処するため、本モジュールは `ima_add_digest_entry` に
-kprobe を仕掛けて `ima_extend_list_mutex` 保持中にシーケンス番号を発行し、リオーダーバッファで
-IMA ログ順に並べ直してから RTMR を拡張します。詳細は [仕組み](mechanism.md) を参照してください。
+kretprobe 発火から RTMR 書き込みまでには workqueue を経由するため、μs〜ms の
+非同期窓があります。この窓中に attestation が行われると、IMA ログには存在するが
+RTMR には未反映のエントリが見える可能性があります。
 
-シーケンス用 kprobe の登録に失敗した場合（カーネル側のシンボル名変更などが原因）は
-FIFO 順にフォールバックします。この場合は古い動作と同様に並行計測の順序が
-入れ替わる可能性があります。
+`validate.sh`/`validate.py` は RTMR を先にスナップショットしてからログを読み、
+ハッシュチェーンが一致した地点で停止する設計のため、async window を正しく許容します。
 
-`CONFIG_LTO_CLANG=y` カーネルでは `ima_add_digest_entry` が確定的にインライン化される
-ため、ビルド時に `src/ima.h` の `#error` で拒否します。LTO カーネルを使う場合は
-LTO を無効にして再ビルドしてください。
+Verifier 側で「未反映」と「恒久的破綻」を区別したい場合は
+`/sys/kernel/ima_rtmr/extended_count` と `/sys/kernel/ima_rtmr/disabled` を確認します。
