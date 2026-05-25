@@ -16,7 +16,8 @@
 
 static int ima_rtmr_ret_handler(struct kretprobe_instance* ri,
                                 struct pt_regs* regs) {
-    if (regs_return_value(regs) == 0)
+    /* ima_add_template_entry returns int; ignore the upper bits. */
+    if ((int)regs_return_value(regs) == 0)
         queue_work(extend_wq, &extend_work);
     return 0;
 }
