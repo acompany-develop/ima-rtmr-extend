@@ -118,6 +118,9 @@ static int __init ima_rtmr_init(void) {
         goto err_sysfs_exit;
     }
 
+    /* Catch up entries added before the probe was armed. */
+    queue_work(extend_wq, &extend_work);
+
     pr_info("loaded (%s, digest %d bytes)\n", hash_name, alg->digest_size);
     return 0;
 
