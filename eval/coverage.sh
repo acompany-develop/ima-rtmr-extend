@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-only
+
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=./common.sh
 . "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 require_root
 
@@ -40,4 +43,5 @@ cat >"$D/coverage.json" <<EOF
 EOF
 
 if verify "$D"; then echo MATCH >"$D/status"; else echo NOMATCH >"$D/status"; fi
-cat "$D/coverage.json"; cat "$D/status"
+cat "$D/coverage.json"
+cat "$D/status"

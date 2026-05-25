@@ -28,11 +28,13 @@ def main():
     for kind, vals in by_kind.items():
         if len(vals) <= a.warmup:
             continue
-        ns = sorted(v * ns_per_cycle for v in vals[a.warmup:])
+        ns = sorted(v * ns_per_cycle for v in vals[a.warmup :])
         n = len(ns)
         pct = lambda q: ns[min(n - 1, int(q * (n - 1)))]
-        print(f"{kind},{n},{statistics.fmean(ns):.0f},"
-              f"{pct(.5):.0f},{pct(.95):.0f},{pct(.99):.0f},{pct(.999):.0f},{ns[-1]:.0f}")
+        print(
+            f"{kind},{n},{statistics.fmean(ns):.0f},"
+            f"{pct(0.5):.0f},{pct(0.95):.0f},{pct(0.99):.0f},{pct(0.999):.0f},{ns[-1]:.0f}"
+        )
 
 
 if __name__ == "__main__":

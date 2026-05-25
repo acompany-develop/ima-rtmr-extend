@@ -9,7 +9,7 @@ Copyright (c) 2026 Acompany Co., Ltd.
 すべて `sudo` で実行する想定。
 
 | script | 内容 |
-|---|---|
+| --- | --- |
 | `setup-host.sh` | CPU governor / ASLR / SMT を計測向けに固定 (1 boot に 1 回) |
 | `smoke.sh` | モジュールを load してワークロードを 1 周走らせ、`validate.py` で一致確認 |
 | `replay-match.sh` | `stress-ng --exec N` を N と反復で振り、replay 一致率を Wilson 95% CI で出力 |

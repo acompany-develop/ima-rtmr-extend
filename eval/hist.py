@@ -30,7 +30,9 @@ def main(path):
     for line in text.splitlines():
         m = HEAD.match(line)
         if m:
-            cur = m.group(1); sections[cur] = []; continue
+            cur = m.group(1)
+            sections[cur] = []
+            continue
         if cur is not None:
             if line.strip() == "" and sections[cur]:
                 cur = None
@@ -48,12 +50,18 @@ def main(path):
         for line in lines:
             m = BUCKET.search(line)
             if m:
-                bs.append((int(m.group(1)) * SUF[m.group(2)],
-                           int(m.group(3)) * SUF[m.group(4)],
-                           int(m.group(5))))
+                bs.append(
+                    (
+                        int(m.group(1)) * SUF[m.group(2)],
+                        int(m.group(3)) * SUF[m.group(4)],
+                        int(m.group(5)),
+                    )
+                )
         if bs:
             n = sum(c for _, _, c in bs)
-            print(f"{name},{percentile(bs, .5)},{percentile(bs, .99)},{percentile(bs, .999)},{mx},{n},{e1},{e2}")
+            print(
+                f"{name},{percentile(bs, 0.5)},{percentile(bs, 0.99)},{percentile(bs, 0.999)},{mx},{n},{e1},{e2}"
+            )
 
 
 if __name__ == "__main__":

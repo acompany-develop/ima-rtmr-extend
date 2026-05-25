@@ -1,6 +1,8 @@
+#!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-only
 # Source from each eval script.
-set -euo pipefail
+
+set -eEuo pipefail
 
 EVAL_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_DIR=$(cd "$EVAL_DIR/.." && pwd)
@@ -10,10 +12,14 @@ REPO_DIR=$(cd "$EVAL_DIR/.." && pwd)
 : "${SYSFS:=/sys/kernel/ima_rtmr}"
 : "${KO:=$REPO_DIR/build/ima_rtmr.ko}"
 
-require_root() { [[ $EUID -eq 0 ]] || { echo "must run as root" >&2; exit 1; }; }
+require_root() { [[ $EUID -eq 0 ]] || {
+    echo "must run as root" >&2
+    exit 1
+}; }
 
 new_run_dir() {
-    local d="$EVAL_DIR/results/$1-$(date -u +%Y%m%dT%H%M%SZ)"
+    local d
+    d="$EVAL_DIR/results/$1-$(date -u +%Y%m%dT%H%M%SZ)"
     mkdir -p "$d"
     printf '%s\n' "$d"
 }
@@ -35,9 +41,14 @@ write_meta() {
     } >"$d/meta.json"
 }
 
+# Optional $1 is mr_path; callers that auto-detect omit it.
+# shellcheck disable=SC2120
 load_module() {
     lsmod | grep -qE '^ima_rtmr ' && return 0
-    [[ -f $KO ]] || { echo "$KO not found; run make" >&2; return 1; }
+    [[ -f $KO ]] || {
+        echo "$KO not found; run make" >&2
+        return 1
+    }
     insmod "$KO" ${1:+mr_path="$1"}
 }
 
