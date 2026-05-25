@@ -1,0 +1,32 @@
+#!/usr/bin/env bpftrace
+// SPDX-License-Identifier: GPL-2.0-only
+//
+// Delta from the most recent ima_add_template_entry return to ima_rtmr_do_extend return.
+// kretprobe in this module carries no per-entry payload, so per-entry pairing is not
+// possible — this gives the worst-case observation latency a verifier would see.
+
+BEGIN { printf("tracing. Ctrl-C to end.\n"); }
+
+kretprobe:ima_add_template_entry / retval == 0 / {
+    @last = nsecs;
+    @e1++;
+}
+
+kretprobe:ima_rtmr_do_extend {
+    if (@last > 0) {
+        $d = nsecs - @last;
+        @ns = hist($d);
+        @ns_lin = lhist($d, 0, 10000000, 100000);
+        @max = max($d);
+    }
+    @e2++;
+}
+
+interval:s:10 { printf("[%us] e1=%lu e2=%lu max=%luns\n", elapsed/1000000000, @e1, @e2, @max); }
+
+END {
+    printf("\n=== ns log2 ===\n"); print(@ns);
+    printf("\n=== 0..10ms 100us lin ===\n"); print(@ns_lin);
+    printf("\nmax=%lu e1=%lu e2=%lu\n", @max, @e1, @e2);
+    clear(@last);
+}
