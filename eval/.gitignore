@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (c) 2026 Acompany Co., Ltd.
+
+# Result directories created by individual eval runs
+results/
+
+# Compiled microbench binary
+c/microbench
