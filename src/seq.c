@@ -40,6 +40,7 @@ static int seq_pre_handler(struct kprobe* p, struct pt_regs* regs) {
     struct ima_template_entry* entry =
         (struct ima_template_entry*)regs_get_kernel_argument(regs, 0);
     u64 seq = atomic64_inc_return(&seq_counter);
+    u64 evicted_seq = 0;
     unsigned long flags;
     int i;
 
@@ -51,10 +52,22 @@ static int seq_pre_handler(struct kprobe* p, struct pt_regs* regs) {
             break;
         }
     }
+    if (i == SEQ_MAP_SIZE) {
+        /* Map full: evict the smallest-seq slot (its ret_handler was missed). */
+        int o = 0;
+
+        for (i = 1; i < SEQ_MAP_SIZE; i++)
+            if (seq_map[i].seq < seq_map[o].seq)
+                o = i;
+        evicted_seq = seq_map[o].seq;
+        seq_map[o].entry = entry;
+        seq_map[o].seq = seq;
+    }
     spin_unlock_irqrestore(&seq_map_lock, flags);
 
-    if (i == SEQ_MAP_SIZE)
-        pr_warn_ratelimited("seq map full, ordering may be lost\n");
+    if (evicted_seq)
+        pr_warn_ratelimited("seq map full, evicted stale seq %llu\n",
+                            evicted_seq);
 
     return 0;
 }
