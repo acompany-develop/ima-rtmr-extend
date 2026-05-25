@@ -6,8 +6,8 @@
 . "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 require_root
 
-D=$(new_run_dir smoke)
-write_meta "$D"
+d=$(new_run_dir smoke)
+write_meta "$d"
 load_module
 
 fail=0
@@ -18,13 +18,13 @@ for w in serial parallel docker; do
     docker) command -v docker >/dev/null && seq 1 8 | xargs -P 8 -I _ docker run --rm alpine echo hi >/dev/null 2>&1 || true ;;
     esac
     sleep 2
-    sd="$D/$w"
+    sd="$d/$w"
     mkdir -p "$sd"
     snapshot "$sd"
     if verify "$sd"; then
-        echo "$w MATCH" | tee -a "$D/summary.txt"
+        echo "$w MATCH" | tee -a "$d/summary.txt"
     else
-        echo "$w NOMATCH" | tee -a "$D/summary.txt"
+        echo "$w NOMATCH" | tee -a "$d/summary.txt"
         fail=1
     fi
 done

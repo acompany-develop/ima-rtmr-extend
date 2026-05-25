@@ -6,23 +6,25 @@
 . "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 require_root
 
-D=$(new_run_dir syscall-bench)
-write_meta "$D"
+d=$(new_run_dir syscall-bench)
+write_meta "$d"
 
-BIN=$EVAL_DIR/syscall-bench
-[[ -x $BIN && $BIN -nt $EVAL_DIR/syscall-bench.c ]] || cc -O2 -Wall -o "$BIN" "$EVAL_DIR/syscall-bench.c"
+bin=$eval_dir/syscall-bench
+[[ -x $bin && $bin -nt $eval_dir/syscall-bench.c ]] || cc -O2 -Wall -o "$bin" "$eval_dir/syscall-bench.c"
 
-N=${N:-10000}
-TSC_HZ=${TSC_HZ:-$(awk '/cpu MHz/{print int($4*1e6); exit}' /proc/cpuinfo)}
-: "${TSC_HZ:=2500000000}"
+iters="${ITERS:-10000}"
+tsc_hz="${TSC_HZ:-$(awk '/cpu MHz/{print int($4*1e6); exit}' /proc/cpuinfo)}"
+: "${tsc_hz:=2500000000}"
+cpu="${CPU:-4}"
+intree="${INTREE:-0}"
 
 run_one() {
     local tag=$1
-    taskset -c "${CPU:-4}" "$BIN" execve "$N" >"$D/$tag-execve.raw"
-    taskset -c "${CPU:-4}" "$BIN" openat "$N" /etc/hostname >"$D/$tag-openat.raw"
-    taskset -c "${CPU:-4}" "$BIN" read "$N" /etc/hostname >"$D/$tag-read.raw"
+    taskset -c "$cpu" "$bin" execve "$iters" >"$d/$tag-execve.raw"
+    taskset -c "$cpu" "$bin" openat "$iters" /etc/hostname >"$d/$tag-openat.raw"
+    taskset -c "$cpu" "$bin" read "$iters" /etc/hostname >"$d/$tag-read.raw"
     for k in execve openat read; do
-        python3 "$EVAL_DIR/syscall-stats.py" --tsc-hz "$TSC_HZ" "$D/$tag-$k.raw" >"$D/$tag-$k.csv"
+        python3 "$eval_dir/syscall-stats.py" --tsc-hz "$tsc_hz" "$d/$tag-$k.raw" >"$d/$tag-$k.csv"
     done
 }
 
@@ -31,11 +33,11 @@ run_one baseline
 load_module
 run_one oot
 unload_module
-[[ ${INTREE:-0} == 1 && -d $SYSFS ]] && run_one intree
+[[ $intree == 1 && -d $sysfs_dir ]] && run_one intree
 
 if command -v hyperfine >/dev/null; then
     # hyperfine evaluates its argument as a shell command, so single quotes are intentional.
     # shellcheck disable=SC2016
-    hyperfine --warmup 3 --runs 20 --export-csv "$D/hyperfine.csv" \
+    hyperfine --warmup 3 --runs 20 --export-csv "$d/hyperfine.csv" \
         'for i in $(seq 1 500); do /bin/true; done' || true
 fi

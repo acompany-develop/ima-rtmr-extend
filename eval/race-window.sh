@@ -10,33 +10,33 @@ command -v bpftrace >/dev/null || {
     exit 1
 }
 
-D=$(new_run_dir race-window)
-write_meta "$D"
+d=$(new_run_dir race-window)
+write_meta "$d"
 load_module
 
-DUR=${DUR:-60}
+dur="${DUR:-60}"
 
 run() {
     local name=$1 cmd=$2
-    bpftrace "$EVAL_DIR/race-window.bt" >"$D/$name.bpf" 2>&1 &
+    bpftrace "$eval_dir/race-window.bt" >"$d/$name.bpf" 2>&1 &
     local bp=$!
     sleep 1
     bash -c "$cmd" &
     local wp=$!
-    sleep "$DUR"
+    sleep "$dur"
     kill -INT "$wp" "$bp" 2>/dev/null || true
     wait "$wp" "$bp" 2>/dev/null || true
 }
 
 run serial 'while true; do /bin/true; done'
-run par16 "stress-ng --exec 16 --timeout ${DUR}s"
-run par64 "stress-ng --exec 64 --timeout ${DUR}s"
+run par16 "stress-ng --exec 16 --timeout ${dur}s"
+run par64 "stress-ng --exec 64 --timeout ${dur}s"
 command -v docker >/dev/null && run docker 'while true; do docker run --rm alpine echo hi >/dev/null 2>&1 || break; done'
 
-for f in "$D"/*.bpf; do
-    python3 "$EVAL_DIR/hist.py" "$f" >"${f%.bpf}.csv" || true
+for f in "$d"/*.bpf; do
+    python3 "$eval_dir/hist.py" "$f" >"${f%.bpf}.csv" || true
 done
 
 for attr in disabled extended_count skip_count nmissed; do
-    [[ -r $SYSFS/$attr ]] && printf '%-20s %s\n' "$attr" "$(cat "$SYSFS/$attr")"
-done >"$D/sysfs.txt"
+    [[ -r $sysfs_dir/$attr ]] && printf '%-20s %s\n' "$attr" "$(cat "$sysfs_dir/$attr")"
+done >"$d/sysfs.txt"
