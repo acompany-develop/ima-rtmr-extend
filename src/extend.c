@@ -49,7 +49,9 @@ void ima_rtmr_do_extend(const struct ima_template_entry* entry) {
 
     digest = find_digest(entry);
     if (!digest) {
-        pr_warn_ratelimited("no digest for alg_id 0x%04x in entry\n", target_alg_id);
+        /* Missing digest desynchronizes RTMR from the IMA log just like a write failure. */
+        pr_err("no digest for alg_id 0x%04x in entry, disabling\n", target_alg_id);
+        WRITE_ONCE(extend_disabled, true);
         return;
     }
 
