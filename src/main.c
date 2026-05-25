@@ -139,6 +139,7 @@ static void __exit ima_rtmr_exit(void) {
 
     ima_rtmr_sysfs_exit();
     filp_close(mr_file, NULL);
+    ima_rtmr_extend_exit();
 
     pr_info("unloaded\n");
 }
