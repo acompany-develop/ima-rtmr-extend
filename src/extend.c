@@ -70,5 +70,6 @@ void ima_rtmr_extend_init(struct file* mr_file, u16 alg_id, int digest_size, int
     target_alg_id = alg_id;
     target_digest_size = digest_size;
     max_digest_banks = num_banks;
+    WRITE_ONCE(extend_disabled, false);
     INIT_WORK(&extend_work, extend_work_fn);
 }
