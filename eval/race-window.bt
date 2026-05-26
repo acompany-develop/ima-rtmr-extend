@@ -9,7 +9,7 @@ BEGIN { printf("tracing. Ctrl-C to end.\n"); }
 
 kretprobe:ima_add_template_entry / retval == 0 / {
     @last = nsecs;
-    @e1++;
+    @e1 = @e1 + 1;
 }
 
 kretprobe:ima_rtmr_do_extend {
@@ -19,14 +19,14 @@ kretprobe:ima_rtmr_do_extend {
         @ns_lin = lhist($d, 0, 10000000, 100000);
         @max = max($d);
     }
-    @e2++;
+    @e2 = @e2 + 1;
 }
 
-interval:s:10 { printf("[%us] e1=%lu e2=%lu max=%luns\n", elapsed/1000000000, @e1, @e2, @max); }
+interval:s:10 { printf("[%ds] e1=%d e2=%d max=%d ns\n", elapsed/1000000000, @e1, @e2, @max); }
 
 END {
     printf("\n=== ns log2 ===\n"); print(@ns);
     printf("\n=== 0..10ms 100us lin ===\n"); print(@ns_lin);
-    printf("\nmax=%lu e1=%lu e2=%lu\n", @max, @e1, @e2);
+    printf("\nmax=%d e1=%d e2=%d\n", @max, @e1, @e2);
     clear(@last);
 }
