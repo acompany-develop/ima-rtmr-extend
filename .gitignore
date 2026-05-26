@@ -28,3 +28,4 @@ Module.symvers
 # llm
 .claude/settings.local.json
 .claude/worktrees/
+.claude/scheduled_tasks.lock

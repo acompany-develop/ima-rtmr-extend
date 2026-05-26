@@ -36,8 +36,17 @@ def replay_from(
 
 def main() -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("initial_rtmr", nargs="?", help=f"hex digest; default: read from {DEFAULT_SYSFS}/initial")
-    p.add_argument("skip", nargs="?", type=int, help=f"entries to skip; default: read from {DEFAULT_SYSFS}/skip_count")
+    p.add_argument(
+        "initial_rtmr",
+        nargs="?",
+        help=f"hex digest; default: read from {DEFAULT_SYSFS}/initial",
+    )
+    p.add_argument(
+        "skip",
+        nargs="?",
+        type=int,
+        help=f"entries to skip; default: read from {DEFAULT_SYSFS}/skip_count",
+    )
     p.add_argument("--rtmr", default=DEFAULT_RTMR)
     p.add_argument("--log", default=DEFAULT_LOG)
     p.add_argument("--sysfs", default=DEFAULT_SYSFS)
@@ -46,7 +55,11 @@ def main() -> int:
 
     sysfs = Path(args.sysfs)
     initial_hex = args.initial_rtmr or (sysfs / "initial").read_text().strip()
-    skip = args.skip if args.skip is not None else int((sysfs / "skip_count").read_text().strip())
+    skip = (
+        args.skip
+        if args.skip is not None
+        else int((sysfs / "skip_count").read_text().strip())
+    )
 
     baseline: bytes = bytes.fromhex(initial_hex)
     with open(args.rtmr, "rb") as f:
