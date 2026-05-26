@@ -17,16 +17,20 @@ kretprobe:ima_rtmr_do_extend {
         $d = nsecs - @last;
         @ns = hist($d);
         @ns_lin = lhist($d, 0, 10000000, 100000);
-        @max = max($d);
+        if ($d > @max_ns) {
+            @max_ns = $d;
+        }
     }
     @e2 = @e2 + 1;
 }
 
-interval:s:10 { printf("[%ds] e1=%d e2=%d max=%d ns\n", elapsed/1000000000, @e1, @e2, @max); }
+interval:s:10 {
+    printf("[%ds] e1=%d e2=%d max=%d ns\n", elapsed/1000000000, @e1, @e2, @max_ns);
+}
 
 END {
     printf("\n=== ns log2 ===\n"); print(@ns);
     printf("\n=== 0..10ms 100us lin ===\n"); print(@ns_lin);
-    printf("\nmax=%d e1=%d e2=%d\n", @max, @e1, @e2);
+    printf("\nmax=%d e1=%d e2=%d\n", @max_ns, @e1, @e2);
     clear(@last);
 }
