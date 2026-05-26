@@ -10,7 +10,7 @@ d=$(new_run_dir syscall-bench)
 write_meta "$d"
 
 bin=$eval_dir/syscall-bench
-[[ -x $bin && $bin -nt $eval_dir/syscall-bench.c ]] || cc -O2 -Wall -o "$bin" "$eval_dir/syscall-bench.c"
+[[ -s $bin && -x $bin && $bin -nt $eval_dir/syscall-bench.c ]] || cc -O2 -Wall -o "$bin" "$eval_dir/syscall-bench.c"
 
 iters="${ITERS:-10000}"
 tsc_hz="${TSC_HZ:-$(awk '/cpu MHz/{print int($4*1e6); exit}' /proc/cpuinfo)}"
