@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (c) 2026 Acompany Co., Ltd.
+
+obj-m := ima_policy_log.o
+ccflags-y += -DDEBUG
+
+ima_policy_log-y := main.o handler.o measure.o utils.o
