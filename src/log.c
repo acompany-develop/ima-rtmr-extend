@@ -72,7 +72,10 @@ void ima_rtmr_log_advance(void) {
         next = rcu_dereference_check(READ_ONCE(cursor)->next, 1);
 
         qe = list_entry(next, struct ima_queue_entry, later);
-        ima_rtmr_do_extend(qe->entry);
+        /* A failed entry was not written to the RTMR, so it must not count
+         * as extended nor be skipped over. */
+        if (!ima_rtmr_do_extend(qe->entry))
+            return;
         WRITE_ONCE(cursor, next);
         atomic_long_inc(&extended_count);
     }

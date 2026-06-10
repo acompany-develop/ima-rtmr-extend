@@ -39,20 +39,20 @@ static const u8* find_digest(const struct ima_template_entry* entry) {
     return NULL;
 }
 
-void ima_rtmr_do_extend(const struct ima_template_entry* entry) {
+bool ima_rtmr_do_extend(const struct ima_template_entry* entry) {
     const u8* digest;
     loff_t pos = 0;
     ssize_t ret;
 
     if (READ_ONCE(extend_disabled))
-        return;
+        return false;
 
     digest = find_digest(entry);
     if (!digest) {
         /* Missing digest desynchronizes RTMR from the IMA log just like a write failure. */
         pr_err("no digest for alg_id 0x%04x in entry, disabling\n", target_alg_id);
         WRITE_ONCE(extend_disabled, true);
-        return;
+        return false;
     }
 
     ret = kernel_write(mr_file_ref, digest, target_digest_size, &pos);
@@ -60,7 +60,9 @@ void ima_rtmr_do_extend(const struct ima_template_entry* entry) {
         /* Any failure diverges RTMR from the IMA log; future writes would compound. */
         pr_err("RTMR extend failed: %zd (expected %d), disabling\n", ret, target_digest_size);
         WRITE_ONCE(extend_disabled, true);
+        return false;
     }
+    return true;
 }
 
 static void extend_work_fn(struct work_struct* work) {
