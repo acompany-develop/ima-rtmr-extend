@@ -25,6 +25,7 @@ static unsigned long skip_count;
 
 int __init ima_rtmr_log_init(void) {
     unsigned long addr = ima_rtmr_ksym_lookup("ima_measurements");
+    struct list_head* last;
     struct list_head* p;
     unsigned long n = 0;
 
@@ -34,12 +35,17 @@ int __init ima_rtmr_log_init(void) {
     }
     WRITE_ONCE(ima_log_head, (struct list_head*)addr);
 
-    /* Start past the current tail so pre-load entries are not re-extended.
-     * Count them so the verifier can skip ahead instead of scanning. */
+    /* Start past the entries counted here so they are not re-extended; the
+     * verifier skips ahead by this count instead of scanning. The cursor must
+     * be the last counted node, not head->prev, which a concurrent IMA append
+     * could have moved past the counted snapshot. */
     rcu_read_lock();
-    list_for_each_rcu(p, ima_log_head)
+    last = ima_log_head;
+    list_for_each_rcu(p, ima_log_head) {
+        last = p;
         n++;
-    WRITE_ONCE(cursor, rcu_dereference(ima_log_head->prev));
+    }
+    WRITE_ONCE(cursor, last);
     rcu_read_unlock();
     WRITE_ONCE(skip_count, n);
     return 0;
