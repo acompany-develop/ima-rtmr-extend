@@ -7,5 +7,6 @@
 
 extern struct kretprobe ima_policy_log_parse_kretprobe;
 extern struct kretprobe ima_policy_log_update_kretprobe;
+extern struct kprobe ima_policy_log_delete_kprobe;
 
 #endif /* _IMA_POLICY_LOG_HANDLER_H */

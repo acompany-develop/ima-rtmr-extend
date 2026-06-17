@@ -32,6 +32,14 @@ static int __init ima_policy_log_init(void) {
         goto err_measure;
     }
 
+    rc = register_kprobe(&ima_policy_log_delete_kprobe);
+    if (rc) {
+        pr_err("cannot register delete kprobe: %d\n", rc);
+        unregister_kretprobe(&ima_policy_log_update_kretprobe);
+        unregister_kretprobe(&ima_policy_log_parse_kretprobe);
+        goto err_measure;
+    }
+
     pr_info("loaded\n");
     return 0;
 
@@ -41,6 +49,7 @@ err_measure:
 }
 
 static void __exit ima_policy_log_exit(void) {
+    unregister_kprobe(&ima_policy_log_delete_kprobe);
     unregister_kretprobe(&ima_policy_log_update_kretprobe);
     unregister_kretprobe(&ima_policy_log_parse_kretprobe);
 
