@@ -54,9 +54,32 @@ def main() -> int:
     p.add_argument("--log", default=DEFAULT_LOG)
     p.add_argument("--sysfs", default=DEFAULT_SYSFS)
     p.add_argument("--no-search", action="store_true")
+    p.add_argument(
+        "--ignore-disabled",
+        action="store_true",
+        help="proceed even if the module fail-stopped (disabled=1); for forensic inspection only",
+    )
     args = p.parse_args()
 
     sysfs = Path(args.sysfs)
+
+    # Fail-closed against the module's fail-stop flag. A kernel_write failure
+    # leaves RTMR diverged from the IMA log; any later replay match would be
+    # accidental. Verifiers MUST reject attestation in this state.
+    disabled_path = sysfs / "disabled"
+    if disabled_path.exists() and disabled_path.read_text().strip() != "0":
+        if not args.ignore_disabled:
+            print(
+                f"REJECT: {disabled_path} is set; module fail-stopped and RTMR may diverge from the IMA log. "
+                "Pass --ignore-disabled only for forensic inspection.",
+                file=sys.stderr,
+            )
+            return 2
+        print(
+            f"WARNING: {disabled_path} is set; proceeding due to --ignore-disabled (forensic mode).",
+            file=sys.stderr,
+        )
+
     initial_hex = args.initial_rtmr or (sysfs / "initial").read_text().strip()
     skip = (
         args.skip
