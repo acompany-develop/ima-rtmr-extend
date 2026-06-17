@@ -111,6 +111,11 @@
                             # Formatting
                             treefmtEval.${system}.config.build.wrapper
 
+                            # Lint / test
+                            pkgs.python3
+                            pkgs.ruff
+                            pkgs.hadolint
+
                             # Utilities
                             pkgs.kmod
                             pkgs.git

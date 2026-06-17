@@ -55,3 +55,64 @@ jobs:
       - uses: actions/checkout@v4
       - run: apt-get update -qq && apt-get install -y -qq build-essential linux-headers-generic
       - run: make KDIR=$(ls -d /usr/src/linux-headers-*-generic | head -1)
+
+  python-lint:
+    name: ruff check (validate.py)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v19
+        with:
+          extra-conf: |
+            experimental-features = nix-command flakes pipe-operators
+
+      - name: Enable Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v9
+
+      - name: Run ruff check
+        run: nix develop -c ruff check validate.py tests
+
+  python-test:
+    name: validate.py unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v19
+        with:
+          extra-conf: |
+            experimental-features = nix-command flakes pipe-operators
+
+      - name: Enable Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v9
+
+      - name: Run unit tests
+        run: nix develop -c python3 -m unittest discover -s tests -v
+
+  hadolint:
+    name: hadolint (ubuntu Dockerfiles)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v19
+        with:
+          extra-conf: |
+            experimental-features = nix-command flakes pipe-operators
+
+      - name: Enable Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v9
+
+      - name: Run hadolint
+        run: nix develop -c hadolint ubuntu/noble/Dockerfile ubuntu/questing/Dockerfile ubuntu/resolute/Dockerfile
+
+  # NOTE: runtime/QEMU/TDX validation (loading the module, replaying the live
+  # IMA log into an RTMR) requires a TDX guest and is out of scope for CI here;
+  # it remains a manual/future step.

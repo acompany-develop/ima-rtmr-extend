@@ -25,6 +25,10 @@ Module.symvers
 .*.cmd
 .*.d
 
+# Python
+__pycache__/
+*.pyc
+
 # llm
 .claude/settings.local.json
 .claude/worktrees/
