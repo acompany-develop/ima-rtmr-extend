@@ -11,6 +11,7 @@
 #include <linux/fs.h>
 #include <linux/magic.h>
 #include <linux/module.h>
+#include <linux/string.h>
 #include <linux/tpm.h>
 
 #include "detect.h"
@@ -40,6 +41,15 @@ static int __init ima_rtmr_init(void) {
     int rc;
 
     if (mr_path[0] != '\0') {
+        /* A tsm-mr RTMR attribute lives under a .../measurements/ directory and
+         * carries a ":<hash>" suffix (e.g. .../measurements/rtmr2:sha384). Reject
+         * obviously-wrong targets before opening; the SYSFS_MAGIC check below
+         * still guards against a same-shaped path on another filesystem. The
+         * default candidate path in detect.c also matches this pattern. */
+        if (!strstr(mr_path, "/measurements/") || !strrchr(mr_path, ':')) {
+            pr_err("mr_path does not look like a tsm-mr RTMR attribute: %s\n", mr_path);
+            return -EINVAL;
+        }
         mr_file = filp_open(mr_path, O_RDWR, 0);
         if (IS_ERR(mr_file)) {
             pr_err("cannot open %s: %ld\n", mr_path, PTR_ERR(mr_file));
@@ -161,6 +171,9 @@ err_sysfs_exit:
     ima_rtmr_sysfs_exit();
 err_destroy_wq:
     destroy_workqueue(extend_wq);
+    /* Symmetric with the success path's teardown: ima_rtmr_extend_init() ran
+     * before this label, so tear it down before closing the file it referenced. */
+    ima_rtmr_extend_exit();
 err_close:
     filp_close(mr_file, NULL);
     return rc;
@@ -168,6 +181,13 @@ err_close:
 
 static void __exit ima_rtmr_exit(void) {
     unregister_kretprobe(&ima_rtmr_kretprobe);
+
+    /* An entry appended between the last probe firing and unregistration may
+     * never have queued a worker. Queue one final drain so the cursor reaches
+     * the IMA-log tail; destroy_workqueue() then flushes it to completion.
+     * Safe at exit: the probe is gone, we run in process context, and the
+     * worker only walks the never-freed ima_measurements list. */
+    queue_work(extend_wq, &extend_work);
     destroy_workqueue(extend_wq);
 
     if (ima_rtmr_kretprobe.nmissed)

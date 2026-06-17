@@ -23,7 +23,9 @@ static struct kobject* ima_rtmr_kobj;
 static char* initial_hex;
 
 static ssize_t initial_show(struct kobject* k, struct kobj_attribute* a, char* buf) {
-    return sysfs_emit(buf, "%s\n", initial_hex);
+    /* initial_hex is set before the group is created, but guard defensively
+     * so a teardown race or future reorder can never deref NULL. */
+    return sysfs_emit(buf, "%s\n", initial_hex ? initial_hex : "");
 }
 
 static ssize_t disabled_show(struct kobject* k, struct kobj_attribute* a, char* buf) {

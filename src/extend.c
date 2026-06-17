@@ -10,6 +10,7 @@
 #include "extend.h"
 
 #include <linux/fs.h>
+#include <linux/init.h>
 #include <linux/string.h>
 
 #include "ima.h"
@@ -18,10 +19,12 @@
 struct workqueue_struct* extend_wq;
 struct work_struct extend_work;
 
-static struct file* mr_file_ref;
-static u16 target_alg_id;
-static int target_digest_size;
-static int target_idx;
+/* Written once in ima_rtmr_extend_init() before any reader runs (the kretprobe
+ * and workqueue are armed afterwards), so they can live in .ro_after_init. */
+static struct file* mr_file_ref __ro_after_init;
+static u16 target_alg_id __ro_after_init;
+static int target_digest_size __ro_after_init;
+static int target_idx __ro_after_init;
 static bool extend_disabled;
 
 bool ima_rtmr_extend_disabled(void) {
@@ -83,5 +86,9 @@ void ima_rtmr_extend_init(struct file* mr_file, u16 alg_id, int digest_size, int
 }
 
 void ima_rtmr_extend_exit(void) {
-    mr_file_ref = NULL;
+    /* No state to drop here: mr_file_ref is __ro_after_init and the caller
+     * owns mr_file's lifetime (filp_close). The probe is already unregistered
+     * and the workqueue destroyed by the time we run, so no reader can observe
+     * mr_file_ref. Kept as the symmetric counterpart to ima_rtmr_extend_init()
+     * for the init error path. */
 }

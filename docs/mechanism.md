@@ -27,7 +27,9 @@ IMA ログの正規順序そのものです。複数 CPU で同時に計測が�
 
 kretprobe の取りこぼし（`nmissed`）は致命的にはなりません。次回の firing で worker が
 未処理のエントリまで walk して追いつくため、RTMR と IMA ログのチェーンは自動的に
-回復します。
+回復します。次の firing が来ないまま末尾にエントリが残るケース（最後の計測直後など）も、
+モジュール unload 時に最終 drain（`queue_work` → `destroy_workqueue` での flush）を
+行うため取りこぼしません。
 
 `ima_measurements` のアドレスは `kallsyms_lookup_name` 経由で解決します
 （`kallsyms_lookup_name` 自体も v5.7 以降 unexport されているため、`kallsyms_lookup_name`

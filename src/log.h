@@ -3,7 +3,9 @@
 #ifndef _IMA_RTMR_LOG_H
 #define _IMA_RTMR_LOG_H
 
-int ima_rtmr_log_init(void);
+#include <linux/init.h>
+
+int __init ima_rtmr_log_init(void);
 void ima_rtmr_log_advance(void);
 unsigned long ima_rtmr_log_extended_count(void);
 unsigned long ima_rtmr_log_skip_count(void);

@@ -10,7 +10,6 @@
 
 #include "log.h"
 
-#include <linux/atomic.h>
 #include <linux/errno.h>
 #include <linux/rculist.h>
 
@@ -20,7 +19,10 @@
 
 static struct list_head* ima_log_head;
 static struct list_head* cursor;
-static atomic_long_t extended_count;
+/* Single writer: the ordered workqueue worker in ima_rtmr_log_advance(), which
+ * the ordered wq guarantees never runs concurrently with itself. Read lockless
+ * from sysfs, so READ_ONCE/WRITE_ONCE suffice (matches skip_count). */
+static unsigned long extended_count;
 static unsigned long skip_count;
 
 int __init ima_rtmr_log_init(void) {
@@ -77,12 +79,12 @@ void ima_rtmr_log_advance(void) {
         if (!ima_rtmr_do_extend(qe->entry))
             return;
         WRITE_ONCE(cursor, next);
-        atomic_long_inc(&extended_count);
+        WRITE_ONCE(extended_count, READ_ONCE(extended_count) + 1);
     }
 }
 
 unsigned long ima_rtmr_log_extended_count(void) {
-    return (unsigned long)atomic_long_read(&extended_count);
+    return READ_ONCE(extended_count);
 }
 
 unsigned long ima_rtmr_log_skip_count(void) {
