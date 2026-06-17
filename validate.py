@@ -117,10 +117,16 @@ def main() -> int:
             continue
         end = replay_from(baseline, digests, actual, s)
         if end is not None:
+            # A match at a start index other than the expected skip is NOT a
+            # success: it means skip_count is wrong or the RTMR/IMA-log ordering
+            # is off by (s - skip). Report it as a failure so an off-by-one or
+            # ordering bug cannot be masked by the scan.
             print(
-                f"MATCH (scan): skip={s} end={end} replayed={end - s} (delta {s - skip:+d})"
+                f"MISMATCH (scan): matched at start={s} but expected skip={skip} "
+                f"(delta {s - skip:+d}); RTMR does not match the expected position",
+                file=sys.stderr,
             )
-            return 0
+            return 1
 
     print(f"NO MATCH for any start in [0, {total})", file=sys.stderr)
     return 1

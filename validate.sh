@@ -26,10 +26,29 @@ if [[ -z $skip ]]; then
     skip=$(cat "${sysfs_dir}/skip_count")
 fi
 
+# Fail closed: if the module permanently disabled extension (RTMR write error,
+# missing digest, ...), the RTMR has diverged from the IMA log and any "match"
+# below would be meaningless. Refuse to validate.
+if [[ -r ${sysfs_dir}/disabled ]]; then
+    disabled=$(cat "${sysfs_dir}/disabled")
+    if [[ $disabled != "0" ]]; then
+        echo "extension is disabled (${sysfs_dir}/disabled=${disabled}); RTMR diverged from IMA log" >&2
+        exit 1
+    fi
+fi
+
 actual_rtmr="$(xxd -p /sys/class/misc/tdx_guest/measurements/rtmr2:sha384 | tr -d '\n')"
 
 if [[ -z $actual_rtmr ]]; then
     echo "Failed to read actual RTMR[2]" >&2
+    exit 1
+fi
+
+# The initial baseline and the actual RTMR must describe the same digest width.
+# A mismatch means the wrong RTMR/initial pair was supplied; replaying it would
+# silently never match (or match by accident), so reject up front.
+if ((${#rtmr} != ${#actual_rtmr})); then
+    echo "initial RTMR width ${#rtmr} does not match actual RTMR width ${#actual_rtmr}" >&2
     exit 1
 fi
 
