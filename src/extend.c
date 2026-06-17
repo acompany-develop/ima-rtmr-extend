@@ -10,6 +10,7 @@
 #include "extend.h"
 
 #include <linux/fs.h>
+#include <linux/string.h>
 
 #include "ima.h"
 #include "log.h"
@@ -20,39 +21,42 @@ struct work_struct extend_work;
 static struct file* mr_file_ref;
 static u16 target_alg_id;
 static int target_digest_size;
-static int max_digest_banks;
+static int target_idx;
 static bool extend_disabled;
 
 bool ima_rtmr_extend_disabled(void) {
     return READ_ONCE(extend_disabled);
 }
 
-static const u8* find_digest(const struct ima_template_entry* entry) {
-    int i;
-
-    for (i = 0; i < max_digest_banks; i++) {
-        if (entry->digests[i].alg_id == target_alg_id)
-            return entry->digests[i].digest;
-        if (entry->digests[i].alg_id == 0)
-            break;
-    }
-    return NULL;
-}
-
 bool ima_rtmr_do_extend(const struct ima_template_entry* entry) {
-    const u8* digest;
+    const struct tpm_digest* slot = &entry->digests[target_idx];
+    const u8* digest = slot->digest;
+    u8 ff[TPM2_MAX_DIGEST_SIZE];
     loff_t pos = 0;
     ssize_t ret;
 
     if (READ_ONCE(extend_disabled))
         return false;
 
-    digest = find_digest(entry);
-    if (!digest) {
-        /* Missing digest desynchronizes RTMR from the IMA log just like a write failure. */
-        pr_err("no digest for alg_id 0x%04x in entry, disabling\n", target_alg_id);
+    /* target_idx is pinned at load time. A bank slot is tagged with our alg_id;
+     * an extra slot and a violation both leave it zero. Any other tag means the
+     * index drifted from the kernel's layout; stop rather than extend a
+     * wrong-algorithm digest. */
+    if (slot->alg_id != 0 && slot->alg_id != target_alg_id) {
+        pr_err("digest slot %d tagged 0x%04x, want 0x%04x; disabling\n",
+               target_idx,
+               slot->alg_id,
+               target_alg_id);
         WRITE_ONCE(extend_disabled, true);
         return false;
+    }
+
+    /* IMA logs an all-zero digest for violations and extends 0xFF into the TPM
+     * PCR to invalidate it. Mirror the 0xFF so a verifier that replaces all-zero
+     * log lines with 0xFF replays the same chain. */
+    if (!memchr_inv(digest, 0, target_digest_size)) {
+        memset(ff, 0xff, target_digest_size);
+        digest = ff;
     }
 
     ret = kernel_write(mr_file_ref, digest, target_digest_size, &pos);
@@ -69,11 +73,11 @@ static void extend_work_fn(struct work_struct* work) {
     ima_rtmr_log_advance();
 }
 
-void ima_rtmr_extend_init(struct file* mr_file, u16 alg_id, int digest_size, int num_banks) {
+void ima_rtmr_extend_init(struct file* mr_file, u16 alg_id, int digest_size, int slot) {
     mr_file_ref = mr_file;
     target_alg_id = alg_id;
     target_digest_size = digest_size;
-    max_digest_banks = num_banks;
+    target_idx = slot;
     WRITE_ONCE(extend_disabled, false);
     INIT_WORK(&extend_work, extend_work_fn);
 }

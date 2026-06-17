@@ -43,7 +43,13 @@ if ((${#digests[@]} == 0)); then
 fi
 
 for i in "${!digests[@]}"; do
-    rtmr=$(echo -n "${rtmr}${digests[$i]}" | xxd -r -p | sha384sum | awk '{print $1}')
+    digest="${digests[$i]}"
+    # Violation entries log an all-zero digest; the module extends 0xFF to match
+    # the kernel's PCR invalidation, so replay 0xFF in their place.
+    if [[ $digest =~ ^0+$ ]]; then
+        digest="${digest//0/f}"
+    fi
+    rtmr=$(echo -n "${rtmr}${digest}" | xxd -r -p | sha384sum | awk '{print $1}')
 
     if [[ $rtmr == "$actual_rtmr" ]]; then
         echo "match at entry $((i + 1 + skip)) of $((${#digests[@]} + skip)) total" >&2

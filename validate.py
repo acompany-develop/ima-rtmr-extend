@@ -18,7 +18,10 @@ def parse_digest(token: str) -> bytes:
 
 def load_log(path: str) -> list[bytes]:
     with open(path, encoding="utf-8", errors="surrogateescape") as f:
-        return [parse_digest(line.split()[1]) for line in f if line.strip()]
+        digests = [parse_digest(line.split()[1]) for line in f if line.strip()]
+    # Violation entries log an all-zero digest; the module extends 0xFF to match
+    # the kernel's PCR invalidation, so replay 0xFF in their place.
+    return [d if any(d) else b"\xff" * len(d) for d in digests]
 
 
 def replay_from(

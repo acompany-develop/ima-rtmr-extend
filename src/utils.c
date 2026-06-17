@@ -12,11 +12,13 @@
 #include <linux/string.h>
 #include <linux/tpm.h>
 
+#include <crypto/hash_info.h>
+
 static const struct hash_alg_info supported_algs[] = {
-    {"sha1", TPM_ALG_SHA1, 20},
-    {"sha256", TPM_ALG_SHA256, 32},
-    {"sha384", TPM_ALG_SHA384, 48},
-    {"sha512", TPM_ALG_SHA512, 64},
+    {"sha1", TPM_ALG_SHA1, 20, HASH_ALGO_SHA1},
+    {"sha256", TPM_ALG_SHA256, 32, HASH_ALGO_SHA256},
+    {"sha384", TPM_ALG_SHA384, 48, HASH_ALGO_SHA384},
+    {"sha512", TPM_ALG_SHA512, 64, HASH_ALGO_SHA512},
 };
 
 const char* parse_hash_from_path(const char* path) {
@@ -49,19 +51,32 @@ unsigned long __init ima_rtmr_ksym_lookup(const char* name) {
     return lookup_fn(name);
 }
 
-int __init ima_rtmr_read_extra_slots(int* out) {
-    unsigned long addr = ima_rtmr_ksym_lookup("ima_extra_slots");
+/* Read an int kernel symbol via kallsyms and bound-check it. The range guards
+ * against an upstream type change silently feeding us a bogus value. */
+static int __init read_ksym_int(const char* name, int lo, int hi, int* out) {
+    unsigned long addr = ima_rtmr_ksym_lookup(name);
     int v;
 
     if (!addr)
         return -ENOENT;
 
-    /* ima_extra_slots is incremented at most twice in ima_init_crypto();
-     * reject values outside that range to guard against an upstream type
-     * change that would silently corrupt the digest array bound. */
     v = *(const int*)addr;
-    if (v < 0 || v > 2)
+    if (v < lo || v > hi)
         return -ERANGE;
     *out = v;
     return 0;
+}
+
+int __init ima_rtmr_read_extra_slots(int* out) {
+    /* ima_extra_slots is incremented at most twice in ima_init_crypto(). */
+    return read_ksym_int("ima_extra_slots", 0, 2, out);
+}
+
+int __init ima_rtmr_read_hash_algo(int* out) {
+    return read_ksym_int("ima_hash_algo", 0, HASH_ALGO__LAST - 1, out);
+}
+
+int __init ima_rtmr_read_hash_algo_idx(int* out) {
+    /* Bounded loosely here; the caller rejects an index past the digest array. */
+    return read_ksym_int("ima_hash_algo_idx", 0, 63, out);
 }

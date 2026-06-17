@@ -35,6 +35,8 @@ static int __init ima_rtmr_init(void) {
     const char* path;
     int num_banks;
     int extra_slots = 0;
+    int target_idx;
+    int i;
     int rc;
 
     if (mr_path[0] != '\0') {
@@ -74,10 +76,23 @@ static int __init ima_rtmr_init(void) {
         goto err_close;
     }
 
-    /* IMA's digest array size = NR_BANKS(chip) + ima_extra_slots;
-     * NR_BANKS() falls back to 0 when no TPM is present. */
+    /* Resolve which entry->digests[] slot holds the target algorithm and pin
+     * it once. The kernel keys its own log export off this index, never off
+     * alg_id (which it leaves unset on the ima_hash_algo extra slot and zeroes
+     * entirely on violations), so we mirror the index instead of scanning.
+     *
+     * digests[] has NR_BANKS(chip) + ima_extra_slots entries; NR_BANKS() is 0
+     * when no TPM is present. (Built-in init would need late_initcall_sync so
+     * the kallsyms reads below see a populated IMA; insmod always does.) */
     chip = tpm_default_chip();
     num_banks = chip ? chip->nr_allocated_banks : 0;
+    target_idx = -1;
+    for (i = 0; i < num_banks; i++) {
+        if (chip->allocated_banks[i].crypto_id == alg->hash_algo) {
+            target_idx = i;
+            break;
+        }
+    }
     if (chip)
         put_device(&chip->dev);
 
@@ -92,13 +107,31 @@ static int __init ima_rtmr_init(void) {
         num_banks += extra_slots;
     }
 
+    /* No matching TPM bank: the digest can only live in IMA's ima_hash_algo
+     * extra slot, and only when ima_hash_algo is our target algorithm. */
+    if (target_idx < 0) {
+        int kalgo, kidx;
+
+        if (ima_rtmr_read_hash_algo(&kalgo) || kalgo != alg->hash_algo) {
+            pr_err("IMA computes no %s digest; boot with ima_hash=%s\n", hash_name, hash_name);
+            rc = -EINVAL;
+            goto err_close;
+        }
+        if (ima_rtmr_read_hash_algo_idx(&kidx) || kidx >= num_banks) {
+            pr_err("ima_hash_algo_idx out of range (max %d)\n", num_banks - 1);
+            rc = -EINVAL;
+            goto err_close;
+        }
+        target_idx = kidx;
+    }
+
     extend_wq = alloc_ordered_workqueue("ima_rtmr", 0);
     if (!extend_wq) {
         rc = -ENOMEM;
         goto err_close;
     }
 
-    ima_rtmr_extend_init(mr_file, alg->alg_id, alg->digest_size, num_banks);
+    ima_rtmr_extend_init(mr_file, alg->alg_id, alg->digest_size, target_idx);
 
     rc = ima_rtmr_log_init();
     if (rc) {

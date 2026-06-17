@@ -10,6 +10,7 @@ struct hash_alg_info {
     const char* name;
     u16 alg_id;
     int digest_size;
+    int hash_algo; /* enum hash_algo, matches tpm_bank_info.crypto_id / ima_hash_algo */
 };
 
 /* Returns the substring after the last ':' in the sysfs path, or NULL. */
@@ -24,5 +25,10 @@ unsigned long __init ima_rtmr_ksym_lookup(const char* name);
 
 /* Read the runtime value of ima_extra_slots. Returns 0 or negative errno. */
 int __init ima_rtmr_read_extra_slots(int* out);
+
+/* Read ima_hash_algo (enum hash_algo: IMA's template-hash algorithm) and
+ * ima_hash_algo_idx (its slot in entry->digests[]). Return 0 or -errno. */
+int __init ima_rtmr_read_hash_algo(int* out);
+int __init ima_rtmr_read_hash_algo_idx(int* out);
 
 #endif /* _IMA_RTMR_UTILS_H */
