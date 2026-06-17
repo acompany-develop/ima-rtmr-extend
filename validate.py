@@ -57,7 +57,10 @@ def main() -> int:
     p.add_argument(
         "--ignore-disabled",
         action="store_true",
-        help="proceed even if the module fail-stopped (disabled=1); for forensic inspection only",
+        help=(
+            "proceed even if the module fail-stopped (disabled=1); "
+            "for forensic inspection only"
+        ),
     )
     args = p.parse_args()
 
@@ -70,13 +73,15 @@ def main() -> int:
     if disabled_path.exists() and disabled_path.read_text().strip() != "0":
         if not args.ignore_disabled:
             print(
-                f"REJECT: {disabled_path} is set; module fail-stopped and RTMR may diverge from the IMA log. "
+                f"REJECT: {disabled_path} is set; "
+                "module fail-stopped and RTMR may diverge from the IMA log. "
                 "Pass --ignore-disabled only for forensic inspection.",
                 file=sys.stderr,
             )
             return 2
         print(
-            f"WARNING: {disabled_path} is set; proceeding due to --ignore-disabled (forensic mode).",
+            f"WARNING: {disabled_path} is set; "
+            "proceeding due to --ignore-disabled (forensic mode).",
             file=sys.stderr,
         )
 
