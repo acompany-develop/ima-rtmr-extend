@@ -25,7 +25,7 @@ NixOSのカーネルに本リポジトリのモジュールを組み込み、`CO
         {
           services.ima-rtmr = {
             enable = true;
-            patchVersion = "7.0";  # "6.17" も指定可能
+            patchVersion = "7.1";  # "6.17" / "7.0" も指定可能
           };
         }
       ];
@@ -39,7 +39,7 @@ NixOSのカーネルに本リポジトリのモジュールを組み込み、`CO
 ```nix
 {
   boot.kernelPatches = [
-    inputs.ima-rtmr.kernelPatches.${pkgs.system}.default  # 最新版 (7.0)
+    inputs.ima-rtmr.kernelPatches.${pkgs.system}.default  # 最新版 (7.1)
     # inputs.ima-rtmr.kernelPatches.${pkgs.system}."6_17" など指定可
   ];
 }
@@ -48,6 +48,6 @@ NixOSのカーネルに本リポジトリのモジュールを組み込み、`CO
 ### パッチを確認する
 
 ```sh
-nix build .#kernelPatch-7_0
+nix build .#kernelPatch-7_1
 less result
 ```

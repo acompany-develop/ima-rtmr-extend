@@ -36,15 +36,15 @@ sudo insmod build/ima_rtmr.ko mr_path=/sys/class/misc/tdx_guest/measurements/rtm
 ### カーネルに組み込む場合
 
 ```sh
-# パッチ適用（v6.17 / v7.0 に対応）
-kernel/apply-patch.sh /path/to/linux 7.0
+# パッチ適用（v6.17 / v7.0 / v7.1 に対応）
+kernel/apply-patch.sh /path/to/linux 7.1
 
 # menuconfig で CONFIG_IMA_RTMR=y を有効化してビルド
 make menuconfig   # Security -> Integrity -> IMA_RTMR
 make
 
 # パッチ除去
-kernel/remove-patch.sh /path/to/linux 7.0
+kernel/remove-patch.sh /path/to/linux 7.1
 ```
 
 ### Ubuntu用の .deb パッケージをビルドする場合

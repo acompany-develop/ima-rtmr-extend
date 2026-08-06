@@ -13,13 +13,14 @@ IMA_RTMR をカーネルソースツリーに組み込むためのパッチと�
 | --- | --- |
 | `patches/6.17/` | Linux 6.17 |
 | `patches/7.0/` | Linux 7.0 |
+| `patches/7.1/` | Linux 7.1 |
 
 ## 使い方
 
 ### パッチ適用
 
 ```sh
-kernel/apply-patch.sh /path/to/linux-source 7.0
+kernel/apply-patch.sh /path/to/linux-source 7.1
 ```
 
 `src/` ディレクトリを `security/integrity/ima_rtmr` に配置し、
@@ -31,7 +32,7 @@ Kconfig と Makefile にエントリを追加します。
 ### パッチ除去
 
 ```sh
-kernel/remove-patch.sh /path/to/linux-source 7.0
+kernel/remove-patch.sh /path/to/linux-source 7.1
 ```
 
 ### 新しいカーネルバージョンへの対応

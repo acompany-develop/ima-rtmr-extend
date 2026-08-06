@@ -8,7 +8,7 @@
 {
     pkgs,
     lib,
-    patchVersion ? "7.0",
+    patchVersion ? "7.1",
 }:
 
 let

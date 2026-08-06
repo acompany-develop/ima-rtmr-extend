@@ -9,7 +9,7 @@
 set -eEuo pipefail
 
 kernel_src="${1:?"usage: $0 <kernel-source-dir> [patch-version]"}"
-patch_version="${2:-"7.0"}"
+patch_version="${2:-"7.1"}"
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 src_dir="$(cd "${script_dir}/../src" && pwd)"
 patch_dir="${script_dir}/patches/${patch_version}"
