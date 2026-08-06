@@ -14,6 +14,7 @@ IMA_RTMR を組み込んだ Ubuntu カーネル `.deb` パッケージを Docker
 | `noble/` | Ubuntu 24.04 LTS (Noble) HWE | 6.17 |
 | `questing/` | Ubuntu 25.10 (Questing) | 6.17 |
 | `resolute/` | Ubuntu 26.04 LTS (Resolute) | 7.0 |
+| `stonking/` | Ubuntu 26.10 (Stonking) devel | 7.1 |
 
 ## 必要環境
 
@@ -33,7 +34,13 @@ ubuntu/noble/build.sh
 
 # Ubuntu 25.10 (Questing) カーネル 6.17
 ubuntu/questing/build.sh
+
+# Ubuntu 26.10 (Stonking) devel カーネル 7.1
+ubuntu/stonking/build.sh
 ```
+
+Stonking は開発版 (daily-build) のため、カーネル 7.1 は `stonking-proposed`
+ポケットから取得します。アーカイブの状態によりバージョンが進むことがあります。
 
 ビルド完了後、`.deb` パッケージは各バリアントの `out/` に出力されます。
 
