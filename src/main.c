@@ -28,6 +28,8 @@ MODULE_PARM_DESC(mr_path,
                  "(e.g. /sys/class/misc/tdx_guest/measurements/rtmr2:sha384)");
 
 static struct file* mr_file;
+/* False on kernels without ima_queue_stage() (pre-7.2); guard is not armed. */
+static bool stage_guard_armed;
 
 static int __init ima_rtmr_init(void) {
     const struct hash_alg_info* alg;
@@ -155,10 +157,21 @@ static int __init ima_rtmr_init(void) {
         goto err_destroy_wq;
     }
 
+    /* Must be armed before the catch-up walk below: a staging that raced the
+     * walk would otherwise free entries under the cursor. -ENOENT means the
+     * kernel predates ima_queue_stage() and entries are never freed. */
+    rc = register_kprobe(&ima_rtmr_stage_kprobe);
+    if (rc == 0) {
+        stage_guard_armed = true;
+    } else if (rc != -ENOENT) {
+        pr_err("cannot register stage guard: %d\n", rc);
+        goto err_sysfs_exit;
+    }
+
     rc = register_kretprobe(&ima_rtmr_kretprobe);
     if (rc) {
         pr_err("cannot register kretprobe: %d\n", rc);
-        goto err_sysfs_exit;
+        goto err_stage_guard;
     }
 
     /* Catch up entries added before the probe was armed. */
@@ -167,6 +180,9 @@ static int __init ima_rtmr_init(void) {
     pr_info("loaded (%s, digest %d bytes)\n", hash_name, alg->digest_size);
     return 0;
 
+err_stage_guard:
+    if (stage_guard_armed)
+        unregister_kprobe(&ima_rtmr_stage_kprobe);
 err_sysfs_exit:
     ima_rtmr_sysfs_exit();
 err_destroy_wq:
@@ -186,9 +202,12 @@ static void __exit ima_rtmr_exit(void) {
      * never have queued a worker. Queue one final drain so the cursor reaches
      * the IMA-log tail; destroy_workqueue() then flushes it to completion.
      * Safe at exit: the probe is gone, we run in process context, and the
-     * worker only walks the never-freed ima_measurements list. */
+     * stage guard stays armed until the drain has finished. */
     queue_work(extend_wq, &extend_work);
     destroy_workqueue(extend_wq);
+
+    if (stage_guard_armed)
+        unregister_kprobe(&ima_rtmr_stage_kprobe);
 
     if (ima_rtmr_kretprobe.nmissed)
         pr_info("%d probe instances missed\n", ima_rtmr_kretprobe.nmissed);

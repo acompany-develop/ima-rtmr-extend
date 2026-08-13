@@ -31,15 +31,24 @@ bool ima_rtmr_extend_disabled(void) {
     return READ_ONCE(extend_disabled);
 }
 
+void ima_rtmr_extend_disable(void) {
+    WRITE_ONCE(extend_disabled, true);
+}
+
 bool ima_rtmr_do_extend(const struct ima_template_entry* entry) {
-    const struct tpm_digest* slot = &entry->digests[target_idx];
-    const u8* digest = slot->digest;
+    const struct tpm_digest* slot;
+    const u8* digest;
     u8 ff[TPM2_MAX_DIGEST_SIZE];
     loff_t pos = 0;
     ssize_t ret;
 
+    /* Check before the first entry dereference: once the stage guard has
+     * disabled us, the entry may belong to a detached (soon freed) list. */
     if (READ_ONCE(extend_disabled))
         return false;
+
+    slot = &entry->digests[target_idx];
+    digest = slot->digest;
 
     /* target_idx is pinned at load time. A bank slot is tagged with our alg_id;
      * an extra slot and a violation both leave it zero. Any other tag means the

@@ -16,5 +16,6 @@ void ima_rtmr_extend_init(struct file* mr_file, u16 alg_id, int digest_size, int
 void ima_rtmr_extend_exit(void);
 bool ima_rtmr_do_extend(const struct ima_template_entry* entry);
 bool ima_rtmr_extend_disabled(void);
+void ima_rtmr_extend_disable(void);
 
 #endif /* _IMA_RTMR_EXTEND_H */

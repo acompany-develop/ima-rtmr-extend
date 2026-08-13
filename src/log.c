@@ -69,8 +69,10 @@ void ima_rtmr_log_advance(void) {
         if (ima_rtmr_extend_disabled())
             return;
 
-        /* IMA entries are never freed, so the dereferenced pointer stays
-         * valid outside any RCU read-side critical section. */
+        /* Entries stay allocated while extension is enabled: kernels with
+         * ima_queue_stage() (v7.2+) can detach and free them, but the stage
+         * guard disables us before the detach, and the check above precedes
+         * every dereference. See docs/known-issues.md for the residual race. */
         next = rcu_dereference_check(READ_ONCE(cursor)->next, 1);
 
         qe = list_entry(next, struct ima_queue_entry, later);
