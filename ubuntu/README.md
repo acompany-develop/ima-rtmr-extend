@@ -15,6 +15,7 @@ IMA_RTMR を組み込んだ Ubuntu カーネル `.deb` パッケージを Docker
 | `questing/` | Ubuntu 25.10 (Questing) | 6.17 |
 | `resolute/` | Ubuntu 26.04 LTS (Resolute) | 7.0 |
 | `stonking/` | Ubuntu 26.10 (Stonking) devel | 7.1 |
+| `resolute-mainline/` | Ubuntu 26.04 LTS (Resolute) + mainline | 7.2-rc7 |
 
 ## 必要環境
 
@@ -37,10 +38,19 @@ ubuntu/questing/build.sh
 
 # Ubuntu 26.10 (Stonking) devel カーネル 7.1
 ubuntu/stonking/build.sh
+
+# Ubuntu 26.04 (Resolute) + mainline カーネル 7.2-rc7
+ubuntu/resolute-mainline/build.sh
 ```
 
 Stonking は開発版 (daily-build) のため、カーネル 7.1 は `stonking-proposed`
 ポケットから取得します。アーカイブの状態によりバージョンが進むことがあります。
+
+`resolute-mainline/` は例外的に `apt-get source` ではなく kernel.org の tarball
+から `make bindeb-pkg` でビルドします。RC カーネルには Ubuntu のパッケージング
+(unstable ツリー・mainline PPA とも rc7 未対応) が存在しないためです。config は
+Resolute の generic カーネルのものを `olddefconfig` で引き継ぎます。RC を変える
+場合は `--build-arg MAINLINE_VERSION=7.2-rc8` のように指定します。
 
 ビルド完了後、`.deb` パッケージは各バリアントの `out/` に出力されます。
 
