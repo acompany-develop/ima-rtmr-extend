@@ -14,6 +14,7 @@ IMA_RTMR をカーネルソースツリーに組み込むためのパッチと�
 | `patches/6.17/` | Linux 6.17 |
 | `patches/7.0/` | Linux 7.0 |
 | `patches/7.1/` | Linux 7.1 |
+| `patches/7.2/` | Linux 7.2 (rc) |
 
 ## 使い方
 
