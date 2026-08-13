@@ -6,6 +6,5 @@
 #include <linux/kprobes.h>
 
 extern struct kretprobe ima_rtmr_kretprobe;
-extern struct kprobe ima_rtmr_stage_kprobe;
 
 #endif /* _IMA_RTMR_HANDLER_H */

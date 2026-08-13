@@ -26,19 +26,3 @@ struct kretprobe ima_rtmr_kretprobe = {
     .handler = ima_rtmr_ret_handler,
     .kp.symbol_name = "ima_add_template_entry",
 };
-
-/* v7.2 ima_queue_stage() detaches ima_measurements so userspace can free the
- * entries; the log cursor cannot survive that, and a truncated log breaks
- * replay anyway. Disable before the detach happens. */
-static int ima_rtmr_stage_handler(struct kprobe* p, struct pt_regs* regs) {
-    if (!ima_rtmr_extend_disabled()) {
-        ima_rtmr_extend_disable();
-        pr_err("IMA log staged for truncation; disabling\n");
-    }
-    return 0;
-}
-
-struct kprobe ima_rtmr_stage_kprobe = {
-    .symbol_name = "ima_queue_stage",
-    .pre_handler = ima_rtmr_stage_handler,
-};
